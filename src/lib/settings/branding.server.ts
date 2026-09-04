@@ -32,8 +32,8 @@ export const BRANDING_DEFAULTS: BrandingSettings = {
 };
 
 export async function readBranding(): Promise<BrandingSettings> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase
     .from("site_settings")
     .select("key, value")
     .in("key", BRANDING_KEYS as unknown as string[]);

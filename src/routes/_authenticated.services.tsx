@@ -1,15 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Search, RefreshCw, Zap, Globe } from "lucide-react";
+import { ArrowLeft, Search, RefreshCw, Zap, Globe, Send } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrencySettings } from "@/lib/settings.functions";
 import { listPublicServices } from "@/lib/services.functions";
 
-import instagramAsset from "@/assets/instagram.png.asset.json";
-import facebookAsset from "@/assets/facebook.png.asset.json";
-import youtubeAsset from "@/assets/youtube.png.asset.json";
-import telegramAsset from "@/assets/telegram.png.asset.json";
+function InstagramIcon({ className }: { className?: string | undefined }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 2c2.717 0 3.056.01 4.122.06 1.065.05 1.79.217 2.428.465.66.254 1.216.598 1.772 1.153a4.908 4.908 0 0 1 1.153 1.772c.247.637.415 1.363.465 2.428.047 1.066.06 1.405.06 4.122 0 2.717-.01 3.056-.06 4.122-.05 1.065-.218 1.79-.465 2.428a4.883 4.883 0 0 1-1.153 1.772 4.915 4.915 0 0 1-1.772 1.153c-.637.247-1.363.415-2.428.465-1.066.047-1.405.06-4.122.06-2.717 0-3.056-.01-4.122-.06-1.065-.05-1.79-.218-2.428-.465a4.89 4.89 0 0 1-1.772-1.153 4.904 4.904 0 0 1-1.153-1.772c-.248-.637-.415-1.363-.465-2.428C2.013 15.056 2 14.717 2 12c0-2.717.01-3.056.06-4.122.05-1.066.217-1.79.465-2.428a4.88 4.88 0 0 1 1.153-1.772A4.897 4.897 0 0 1 5.45 2.525c.638-.248 1.362-.415 2.428-.465C8.944 2.013 9.283 2 12 2Zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.25a3.25 3.25 0 1 1 0-6.5 3.25 3.25 0 0 1 0 6.5ZM17.25 5.25a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5Z" />
+    </svg>
+  );
+}
+function FacebookIcon({ className }: { className?: string | undefined }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.47h-1.26c-1.24 0-1.63.78-1.63 1.57v1.88h2.78l-.44 2.91h-2.34V22c4.78-.76 8.44-4.92 8.44-9.94Z" />
+    </svg>
+  );
+}
+function YoutubeIcon({ className }: { className?: string | undefined }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.51 3.5 12 3.5 12 3.5s-7.51 0-9.38.55A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.87.55 9.38.55 9.38.55s7.51 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81ZM9.6 15.6V8.4l6.27 3.6-6.27 3.6Z" />
+    </svg>
+  );
+}
 
 const IconRenderer = ({ iconName, fallbackIcon: FallbackIcon, className }: { iconName?: string | null, fallbackIcon: any, className?: string }) => {
   if (!iconName) return <FallbackIcon className={className} />;
@@ -18,10 +35,10 @@ const IconRenderer = ({ iconName, fallbackIcon: FallbackIcon, className }: { ico
   if (IconComponent) return <IconComponent className={className} />;
 
   const lowerName = iconName.toLowerCase();
-  if (lowerName.includes('instagram')) return <img src={instagramAsset.url} className={className} alt="" />;
-  if (lowerName.includes('facebook')) return <img src={facebookAsset.url} className={className} alt="" />;
-  if (lowerName.includes('youtube')) return <img src={youtubeAsset.url} className={className} alt="" />;
-  if (lowerName.includes('telegram')) return <img src={telegramAsset.url} className={className} alt="" />;
+  if (lowerName.includes('instagram')) return <InstagramIcon className={className} />;
+  if (lowerName.includes('facebook')) return <FacebookIcon className={className} />;
+  if (lowerName.includes('youtube')) return <YoutubeIcon className={className} />;
+  if (lowerName.includes('telegram')) return <Send className={className} />;
   return <FallbackIcon className={className} />;
 };
 

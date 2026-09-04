@@ -7,9 +7,9 @@ const PUBLIC_SERVICE_COLUMNS =
   "id, category_id, name, description, price_per_1000, min_quantity, max_quantity, status, icon, discount_percent, created_at";
 
 export const listPublicServices = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabase } = await import("@/integrations/supabase/client");
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("services")
     .select(PUBLIC_SERVICE_COLUMNS)
     .eq("status", "active")

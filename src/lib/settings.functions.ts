@@ -5,9 +5,9 @@ import { DEFAULT_CUSTOMER_CURRENCY, DEFAULT_EXCHANGE_RATE, DEFAULT_PRICE_ROUNDIN
 
 export const getCurrencySettings = createServerFn({ method: "GET" })
   .handler(async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabase } = await import("@/integrations/supabase/client");
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('site_settings')
       .select('key, value')
       .in('key', ['customer_currency', 'usdt_rate', 'price_rounding', 'usdt_to_inr', 'currency_symbol', 'currency_code']);
