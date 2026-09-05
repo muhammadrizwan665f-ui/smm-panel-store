@@ -94,8 +94,16 @@ CREATE POLICY "Public reads categories" ON public.service_categories
 
 DROP POLICY IF EXISTS "Public reads enabled gateways" ON public.payment_gateways;
 CREATE POLICY "Public reads enabled gateways" ON public.payment_gateways
-  FOR SELECT TO anon, authenticated USING (enabled = true);
+  FOR SELECT TO anon, authenticated USING (status = 'active');
 
 DROP POLICY IF EXISTS "Public reads settings" ON public.site_settings;
 CREATE POLICY "Public reads settings" ON public.site_settings
   FOR SELECT TO anon, authenticated USING (true);
+
+-- IMPORTANT: anon (logged-out / not-yet-authenticated) role also needs the base
+-- table-level GRANT, not just the RLS policy above, or Postgres blocks it
+-- with "permission denied for table ..." before RLS is even evaluated.
+GRANT SELECT ON public.services TO anon;
+GRANT SELECT ON public.service_categories TO anon;
+GRANT SELECT ON public.payment_gateways TO anon;
+GRANT SELECT ON public.site_settings TO anon;
