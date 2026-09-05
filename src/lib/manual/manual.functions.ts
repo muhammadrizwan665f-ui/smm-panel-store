@@ -58,74 +58,18 @@ export const createManualOrder = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin: _sbAdmin } = await import("@/integrations/supabase/client.server");
-    const supabaseAdmin: any = _sbAdmin;
-    const userId = context.userId as string;
+    const supabase = (context as any)?.supabase;
 
-    const { data: service, error: svcErr } = await supabaseAdmin
-      .from("services")
-      .select("id, name, fixed_price, allow_quantity, status, service_type")
-      .eq("id", data.serviceId)
-      .maybeSingle();
-
-    if (svcErr) return fail(svcErr.message);
-    if (!service || (service as any).service_type !== "manual" || service.status !== "active") {
-      return fail("This product is not available.");
-    }
-
-    const qty = (service as any).allow_quantity ? Math.max(1, data.quantity ?? 1) : 1;
-    const unit = Number((service as any).fixed_price ?? 0);
-    if (!unit || unit <= 0) return fail("This product has no price configured.");
-    const total = unit * qty;
-
-    const { data: profile, error: profErr } = await supabaseAdmin
-      .from("profiles")
-      .select("wallet_balance")
-      .eq("id", userId)
-      .single();
-    if (profErr) return fail(profErr.message);
-
-    const balance = Number(profile.wallet_balance || 0);
-    if (balance < total) return fail("Insufficient balance. Please add funds first.");
-
-    const { error: debitErr } = await supabaseAdmin
-      .from("profiles")
-      .update({ wallet_balance: balance - total })
-      .eq("id", userId);
-    if (debitErr) return fail(debitErr.message);
-
-    const { data: order, error: orderErr } = await supabaseAdmin
-      .from("orders")
-      .insert({
-        user_id: userId,
-        service_id: service.id,
-        service_name: service.name,
-        link: data.whatsapp.trim(),
-        contact_whatsapp: data.whatsapp.trim(),
-        note: data.note?.trim() || null,
-        quantity: qty,
-        price: total,
-        status: "processing",
-        order_type: "manual",
-      } as any)
-      .select("id")
-      .single();
-
-    if (orderErr) {
-      // refund on failure
-      await supabaseAdmin.from("profiles").update({ wallet_balance: balance }).eq("id", userId);
-      return fail(orderErr.message);
-    }
-
-    await supabaseAdmin.from("wallet_transactions").insert({
-      user_id: userId,
-      amount: -total,
-      type: "order",
-      status: "completed",
-      description: `Manual order: ${service.name}`,
+    const { data: result, error } = await supabase.rpc("rpc_create_manual_order", {
+      _service_id: data.serviceId,
+      _whatsapp: data.whatsapp,
+      _quantity: data.quantity ?? 1,
+      _note: data.note ?? null,
     });
 
-    return ok({ orderId: order.id, total });
+    if (error) return fail(error.message);
+
+    return ok({ orderId: result.orderId, total: result.total });
   });
 
 /* ---------------- Admin: catalogue management ---------------- */
