@@ -16,7 +16,8 @@ export const placeOrder = createServerFn({ method: "POST" })
   })
   .handler(async (args: any) => {
     const data = args.data;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin: _sbAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin: any = _sbAdmin;
     
     const { data: provider, error: pError } = await (supabaseAdmin as any)
       .from('providers')
@@ -45,7 +46,8 @@ export const getOrderStatus = createServerFn({ method: "GET" })
   })
   .handler(async (args: any) => {
     const data = args.data;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin: _sbAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin: any = _sbAdmin;
     
     const { data: provider, error: pError } = await (supabaseAdmin as any)
       .from('providers')
@@ -67,7 +69,8 @@ export const placeProviderOrder = createServerFn({ method: "POST" })
   })
   .handler(async (args: any) => {
     const data = args.data;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabaseAdmin: _sbAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin: any = _sbAdmin;
 
     // 1. Fetch Order with Service detail.
     // NOTE: orders.user_id references auth.users, NOT profiles, so profiles

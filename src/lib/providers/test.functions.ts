@@ -5,8 +5,8 @@ export const runOrderConsistencyTest = createServerFn({ method: "POST" })
   .inputValidator(z.object({
     orderId: z.string().uuid()
   }))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { orderId } = data;
 
     console.log(`[OrderConsistencyTest] Starting test for order ${orderId}`);

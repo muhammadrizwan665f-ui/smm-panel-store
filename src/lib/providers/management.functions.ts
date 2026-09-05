@@ -3,8 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const getInternalServices = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { data, error } = await supabaseAdmin
       .from('services')
@@ -23,8 +23,8 @@ export const getInternalServices = createServerFn({ method: "GET" })
 export const updateServiceStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string; status: 'active' | 'inactive' })
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { error } = await supabaseAdmin
       .from('services')
@@ -38,8 +38,8 @@ export const updateServiceStatus = createServerFn({ method: "POST" })
 export const deleteService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string })
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { error } = await supabaseAdmin
       .from('services')

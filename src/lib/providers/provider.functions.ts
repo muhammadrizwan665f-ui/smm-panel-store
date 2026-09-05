@@ -8,8 +8,8 @@ import { DEFAULT_EXCHANGE_RATE, DEFAULT_CUSTOMER_CURRENCY, DEFAULT_PRICE_ROUNDIN
 // We return a simple string and handle parsing on the client to avoid "All object keys match" errors.
 
 export const listProviders = createServerFn({ method: "GET" })
-  .handler(async () => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     // Unified table name: 'providers'
     const { data, error } = await supabaseAdmin
@@ -38,8 +38,8 @@ export const addProvider = createServerFn({ method: "POST" })
     currency: string;
     notes?: string;
   })
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     const apiVersion = data.apiVersion || 'v2';
     const notes = data.notes || '';
@@ -76,7 +76,7 @@ export const testConnection = createServerFn({ method: "POST" })
     apiKey: string;
     apiVersion?: string;
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     try {
       // Logic for TEST MODE vs REAL API
       if (data.apiKey === 'TEST_KEY_ONLY' || data.apiUrl.includes('example.com')) {
@@ -108,9 +108,10 @@ export const testConnection = createServerFn({ method: "POST" })
   });
 
 export const getProviderBalance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { providerId: string })
-  .handler(async ({ data }: { data: { providerId: string } }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }: { data: { providerId: string }; context: any }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { data: provider, error: pError } = await supabaseAdmin
       .from('providers')
@@ -159,8 +160,8 @@ export const getProviderBalance = createServerFn({ method: "GET" })
 
 export const getProviderServices = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ providerId: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { data: provider, error: pError } = await supabaseAdmin
       .from('providers')
@@ -317,8 +318,8 @@ export const recalculateServicePrices = createServerFn({ method: "POST" })
     serviceIds?: string[]; // If empty, all services
     providerId?: string; // If provided, filter by provider
   })
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     // 1. Fetch settings
     const { data: settingsData } = await supabaseAdmin
@@ -327,7 +328,7 @@ export const recalculateServicePrices = createServerFn({ method: "POST" })
       .in('key', ['usdt_rate', 'customer_currency', 'price_rounding', 'usdt_to_inr']);
     
     const settings: Record<string, string> = {};
-    settingsData?.forEach(item => { settings[item.key] = item.value || ''; });
+    settingsData?.forEach((item: any) => { settings[item.key] = item.value || ''; });
     
     const usdtExchangeRate = parseFloat(settings['usdt_rate'] || String(DEFAULT_EXCHANGE_RATE));
     const customerCurrency = settings['customer_currency'] || DEFAULT_CUSTOMER_CURRENCY;

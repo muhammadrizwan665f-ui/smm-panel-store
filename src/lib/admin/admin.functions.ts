@@ -2,11 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function adminClient() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
-
 function ok(data: unknown) {
   return JSON.stringify({ success: true, data });
 }
@@ -17,8 +12,8 @@ function fail(message: string) {
 export const adminGetProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string })
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data: row, error } = await supabaseAdmin
       .from("providers")
       .select("id, name, api_url, api_version, currency, status, balance, notes, last_sync, last_balance_check, created_at")
@@ -31,8 +26,8 @@ export const adminGetProvider = createServerFn({ method: "POST" })
 export const adminListProviderServices = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => (d ?? {}) as { providerId?: string; search?: string; limit?: number })
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     let q = supabaseAdmin
       .from("provider_services")
       .select("*, provider:providers(id, name, currency)")
@@ -47,8 +42,8 @@ export const adminListProviderServices = createServerFn({ method: "POST" })
 
 export const adminListCategories = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("service_categories")
       .select("*")
@@ -62,8 +57,8 @@ export const adminListCategories = createServerFn({ method: "GET" })
 export const adminSaveCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id?: string; name: string; icon?: string; status?: string })
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const payload = { name: data.name, icon: data.icon ?? null, status: data.status ?? "active" };
     const { error } = data.id
       ? await supabaseAdmin.from("service_categories").update(payload as any).eq("id", data.id)
@@ -75,8 +70,8 @@ export const adminSaveCategory = createServerFn({ method: "POST" })
 export const adminSaveService = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string; icon?: string; status?: string; name?: string; category_id?: string; discount_percent?: number })
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { id, ...payload } = data;
     const { error } = await supabaseAdmin.from("services").update(payload).eq("id", id);
     if (error) return fail(error.message);
@@ -86,8 +81,8 @@ export const adminSaveService = createServerFn({ method: "POST" })
 export const adminDeleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string })
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { error } = await supabaseAdmin.from("service_categories").delete().eq("id", data.id);
     if (error) return fail(error.message);
     return ok(true);
@@ -95,8 +90,8 @@ export const adminDeleteCategory = createServerFn({ method: "POST" })
 
 export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     // 1. Fetch profiles
     const { data: profiles, error: profileError } = await supabaseAdmin
@@ -113,13 +108,13 @@ export const adminListUsers = createServerFn({ method: "GET" })
     
     const emailMap: Record<string, string> = {};
     if (!authError && authUsers?.users) {
-      authUsers.users.forEach(u => {
+      authUsers.users.forEach((u: any) => {
         if (u.email) emailMap[u.id] = u.email;
       });
     }
 
     // 3. Merge
-    const merged = profiles.map(p => ({
+    const merged = profiles.map((p: any) => ({
       ...p,
       email: emailMap[p.id] || null
     }));
@@ -130,8 +125,8 @@ export const adminListUsers = createServerFn({ method: "GET" })
 export const adminImpersonateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     // Safety check: is the targeted user a real user?
     const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(data.userId);
@@ -163,8 +158,8 @@ export const adminImpersonateUser = createServerFn({ method: "POST" })
 
 export const adminListTransactions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("wallet_transactions")
       .select("*")
@@ -183,8 +178,8 @@ export const adminListTransactions = createServerFn({ method: "GET" })
 
 export const adminListOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select("*, service:services(name)")
@@ -203,8 +198,8 @@ export const adminListOrders = createServerFn({ method: "GET" })
 
 export const adminListApiLogs = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("provider_api_logs")
       .select("id, operation, status_code, is_success, created_at, provider:providers(name)")
@@ -216,8 +211,8 @@ export const adminListApiLogs = createServerFn({ method: "GET" })
 
 export const adminGetReports = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const counts = async (table: string) => {
       const { count, error } = await (supabaseAdmin.from(table as any) as any).select("*", { count: "exact", head: true });
       if (error) throw new Error(`${table}: ${error.message}`);
@@ -237,8 +232,8 @@ export const adminGetReports = createServerFn({ method: "GET" })
         .select("price, provider_cost, status")
         .limit(2000);
       if (error) throw new Error(error.message);
-      const revenue = (orderRows ?? []).reduce((s, o: any) => s + Number(o.price || 0), 0);
-      const cost = (orderRows ?? []).reduce((s, o: any) => s + Number(o.provider_cost || 0), 0);
+      const revenue = (orderRows ?? []).reduce((s: number, o: any) => s + Number(o.price || 0), 0);
+      const cost = (orderRows ?? []).reduce((s: number, o: any) => s + Number(o.provider_cost || 0), 0);
       return ok({ users, services, providerServices, providers, orders, categories, revenue, cost, profit: revenue - cost });
     } catch (e: any) {
       return fail(e.message);
@@ -247,8 +242,8 @@ export const adminGetReports = createServerFn({ method: "GET" })
 
 export const adminGetMapping = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("services")
       .select("id, name, status, provider_service_id, provider:providers(id, name), category:service_categories(id, name)")
@@ -260,8 +255,8 @@ export const adminGetMapping = createServerFn({ method: "GET" })
 
 export const adminListSiteSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin.from("site_settings").select("*").order("key");
     if (error) return fail(error.message);
     return ok(data ?? []);
@@ -270,8 +265,8 @@ export const adminListSiteSettings = createServerFn({ method: "GET" })
 export const adminDeleteProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ id: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     // 1. Deactivate all services linked to this provider first for safety
     await (supabaseAdmin
@@ -292,8 +287,8 @@ export const adminDeleteProvider = createServerFn({ method: "POST" })
 export const adminUpdateProviderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ id: z.string(), status: z.string() }).parse(d))
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     const { error } = await supabaseAdmin
       .from("providers")
@@ -315,8 +310,8 @@ export const adminUpdateProviderStatus = createServerFn({ method: "POST" })
 export const adminBulkUpdateCategoryIcons = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ icon: z.string(), categoryIds: z.array(z.string()).optional() }).parse(d))
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     let query = supabaseAdmin.from("service_categories").update({ icon: data.icon });
     
@@ -335,8 +330,8 @@ export const adminBulkUpdateCategoryIcons = createServerFn({ method: "POST" })
 export const adminAdjustWallet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string(), amount: z.number(), type: z.enum(['add', 'cut']), description: z.string().optional() }).parse(d))
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     
     const { data: profile, error: fetchError } = await supabaseAdmin
       .from("profiles")

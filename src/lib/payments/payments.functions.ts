@@ -3,11 +3,6 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestUrl } from "@tanstack/react-start/server";
 
-async function adminClient() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as any;
-}
-
 function ok(data: unknown) {
   return JSON.stringify({ success: true, data });
 }
@@ -64,7 +59,7 @@ export const adminListGateways = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("payment_gateways")
       .select("*")
@@ -84,7 +79,7 @@ export const adminSaveGateway = createServerFn({ method: "POST" })
   .inputValidator((d: any) => gatewaySchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { id, access_token, ...rest } = data;
 
     const payload: Record<string, unknown> = { ...rest };
@@ -110,7 +105,7 @@ export const adminDeleteGateway = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { error } = await supabaseAdmin.from("payment_gateways").delete().eq("id", data.id);
     if (error) return fail(error.message);
     return ok(true);
@@ -121,7 +116,7 @@ export const adminListDeposits = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ status: z.string().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     let q = supabaseAdmin
       .from("deposit_requests")
       .select("*, gateway:payment_gateways(name, provider)")
@@ -173,7 +168,7 @@ export const adminReviewDeposit = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { data: dep, error } = await supabaseAdmin
       .from("deposit_requests")
       .select("*")
@@ -211,8 +206,8 @@ export const adminReviewDeposit = createServerFn({ method: "POST" })
 
 export const listActiveGateways = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const supabaseAdmin = await adminClient();
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("payment_gateways")
       .select(
@@ -257,7 +252,7 @@ export const createQrDeposit = createServerFn({ method: "POST" })
     z.object({ gatewayId: z.string().uuid(), amount: z.number().positive().max(1000000) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const bp = await import("@/lib/payments/bharatpay.server");
 
     const { data: gateway } = await supabaseAdmin
@@ -385,7 +380,7 @@ export const submitManualPaymentProof = createServerFn({ method: "POST" })
     z.object({ depositId: z.string().uuid(), utr: z.string().trim().min(3).max(120) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { data: deposit, error: lookupError } = await supabaseAdmin
       .from("deposit_requests")
       .select("id, gateway_id, status")
@@ -420,7 +415,7 @@ export const getDepositStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ depositId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const bp = await import("@/lib/payments/bharatpay.server");
 
     const { data: dep } = await supabaseAdmin
@@ -509,7 +504,7 @@ export const cancelDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ depositId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { error } = await supabaseAdmin
       .from("deposit_requests")
       .update({ status: "cancelled", processed_at: new Date().toISOString() })
@@ -529,7 +524,7 @@ export const adminTestGateway = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const bp = await import("@/lib/payments/bharatpay.server");
 
     const { data: gateway } = await supabaseAdmin

@@ -2,16 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function adminClient() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
-
 /** Current user's referral code, referrals list and paid commissions. */
 export const getMyReferral = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const userId = context.userId as string;
 
     const { data: profile } = await supabaseAdmin
@@ -56,7 +51,7 @@ export const getMyReferral = createServerFn({ method: "GET" })
 export const adminListReferrals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
@@ -125,7 +120,7 @@ export const adminPayCommission = createServerFn({ method: "POST" })
     });
     if (!isAdmin) return JSON.stringify({ success: false, message: "Forbidden" });
 
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { error } = await supabaseAdmin.from("referral_commissions" as any).insert({
       referrer_id: data.referrerId,
@@ -160,7 +155,7 @@ export const attachReferral = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ code: z.string().min(3).max(40) }).parse(d?.data ?? d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await adminClient();
+    const supabaseAdmin = (context as any)?.supabase;
     const userId = context.userId as string;
 
     const { data: me } = await supabaseAdmin

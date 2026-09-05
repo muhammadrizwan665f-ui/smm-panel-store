@@ -12,11 +12,6 @@ function fail(message: string) {
   return JSON.stringify({ success: false, message, data: null });
 }
 
-async function admin() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
-
 async function assertAdmin(context: any) {
   const { data } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
@@ -28,7 +23,7 @@ async function assertAdmin(context: any) {
 /* ---------------- Public catalogue ---------------- */
 
 export const listManualCatalog = createServerFn({ method: "GET" }).handler(async () => {
-  const supabaseAdmin = await admin();
+  const { supabase: supabaseAdmin } = await import("@/integrations/supabase/client");
 
   const [{ data: cats }, { data: svcs }] = await Promise.all([
     supabaseAdmin
@@ -63,7 +58,8 @@ export const createManualOrder = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await admin();
+    const { supabaseAdmin: _sbAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin: any = _sbAdmin;
     const userId = context.userId as string;
 
     const { data: service, error: svcErr } = await supabaseAdmin
@@ -138,7 +134,7 @@ export const adminListManualCatalog = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
     const [{ data: cats }, { data: svcs }] = await Promise.all([
       supabaseAdmin
         .from("service_categories")
@@ -168,7 +164,7 @@ export const adminSaveManualCategory = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
     const payload: any = {
       name: data.name,
       icon: data.icon || null,
@@ -187,7 +183,7 @@ export const adminDeleteManualCategory = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
     const { error } = await supabaseAdmin
       .from("service_categories")
       .delete()
@@ -215,7 +211,7 @@ export const adminSaveManualService = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
     const payload: any = {
       category_id: data.category_id,
       name: data.name,
@@ -242,7 +238,7 @@ export const adminDeleteManualService = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
     const { error } = await supabaseAdmin
       .from("services")
       .delete()
@@ -258,7 +254,7 @@ export const adminListManualOrders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
     const { data, error } = await supabaseAdmin
       .from("orders")
       .select("*")
@@ -289,7 +285,7 @@ export const adminUpdateManualOrder = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const supabaseAdmin = await admin();
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { data: order, error } = await supabaseAdmin
       .from("orders")

@@ -17,8 +17,8 @@ export const importServices = createServerFn({ method: "POST" })
     categoryId?: string; // Target category
     createNewCategory?: string; // Name for new category if needed
   })
-  .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
 
     const { providerId, serviceIds, markupType, markupAmount, categoryId, createNewCategory } = data;
     
@@ -29,7 +29,7 @@ export const importServices = createServerFn({ method: "POST" })
       .in('key', ['customer_currency', 'price_rounding', 'usdt_rate', 'usdt_to_inr']);
     
     const settings: Record<string, string> = {};
-    settingsData?.forEach(item => {
+    settingsData?.forEach((item: any) => {
       settings[item.key] = item.value || '';
     });
 
