@@ -9,6 +9,7 @@ import { DEFAULT_EXCHANGE_RATE, DEFAULT_CUSTOMER_CURRENCY, DEFAULT_PRICE_ROUNDIN
  * Refactored to use global currency conversion logic
  */
 export const importServices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as {
     providerId: string;
     serviceIds?: string[]; // If empty, import all

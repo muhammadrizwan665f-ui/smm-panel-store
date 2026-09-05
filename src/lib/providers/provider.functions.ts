@@ -8,6 +8,7 @@ import { DEFAULT_EXCHANGE_RATE, DEFAULT_CUSTOMER_CURRENCY, DEFAULT_PRICE_ROUNDIN
 // We return a simple string and handle parsing on the client to avoid "All object keys match" errors.
 
 export const listProviders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const supabaseAdmin = (context as any)?.supabase;
     
@@ -159,6 +160,7 @@ export const getProviderBalance = createServerFn({ method: "GET" })
   });
 
 export const getProviderServices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ providerId: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = (context as any)?.supabase;
@@ -314,6 +316,7 @@ export const getProviderServices = createServerFn({ method: "POST" })
   });
 
 export const recalculateServicePrices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { 
     serviceIds?: string[]; // If empty, all services
     providerId?: string; // If provided, filter by provider
