@@ -56,10 +56,15 @@ export const adminListCategories = createServerFn({ method: "GET" })
 
 export const adminSaveCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: any) => d as { id?: string; name: string; icon?: string; status?: string })
+  .inputValidator((d: any) => d as { id?: string; name: string; icon?: string; status?: string; parent_category_id?: string | null })
   .handler(async ({ data, context }) => {
     const supabaseAdmin = (context as any)?.supabase;
-    const payload = { name: data.name, icon: data.icon ?? null, status: data.status ?? "active" };
+    const payload = {
+      name: data.name,
+      icon: data.icon ?? null,
+      status: data.status ?? "active",
+      parent_category_id: data.parent_category_id ?? null,
+    };
     const { error } = data.id
       ? await supabaseAdmin.from("service_categories").update(payload as any).eq("id", data.id)
       : await supabaseAdmin.from("service_categories").insert(payload as any);

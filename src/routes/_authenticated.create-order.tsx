@@ -87,6 +87,7 @@ function NewOrderPage() {
   const [dbServices, setDbServices] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [selectedCategory, setSelectedCategory] = React.useState<any | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = React.useState<any | null>(null);
   const [selectedService, setSelectedService] = React.useState<any | null>(null);
   const [quantity, setQuantity] = React.useState<number | null>(null);
   const [link, setLink] = React.useState("");
@@ -150,6 +151,13 @@ function NewOrderPage() {
   };
 
   const activeCategories = mode === "manual" ? manualCategories : categories;
+  // Only top-level categories (no parent) are shown as Platforms in step 1.
+  const topLevelCategories = activeCategories.filter((c: any) => !c.parent_category_id);
+  const subcategoriesOf = (catId: string) => activeCategories.filter((c: any) => c.parent_category_id === catId);
+  // The category actually used to filter services: the chosen subcategory if
+  // one was picked, otherwise the platform itself (for platforms with no
+  // subcategories, services stay directly attached to the platform).
+  const effectiveCategory = selectedSubcategory || selectedCategory;
 
   const manualTotal = selectedService
     ? Number(selectedService.fixed_price || 0) * (selectedService.allow_quantity ? manualQty : 1)
@@ -170,6 +178,7 @@ function NewOrderPage() {
       if (!res.success) throw new Error(res.message);
       toast.success("Order placed! We will contact you on WhatsApp shortly.");
       setSelectedCategory(null);
+      setSelectedSubcategory(null);
       setSelectedService(null);
       setWhatsapp("");
       setNote("");
@@ -246,6 +255,7 @@ function NewOrderPage() {
 
       // Reset state
       setSelectedCategory(null);
+      setSelectedSubcategory(null);
       setSelectedService(null);
       setQuantity(null);
       setLink("");
@@ -264,6 +274,8 @@ function NewOrderPage() {
       setWhatsapp("");
       setNote("");
       setManualQty(1);
+    } else if (selectedSubcategory) {
+      setSelectedSubcategory(null);
     } else setSelectedCategory(null);
   };
 
@@ -287,7 +299,7 @@ function NewOrderPage() {
           {([["api", "SMM Services"], ["manual", "Subscriptions"]] as const).map(([m, label]) => (
             <button
               key={m}
-              onClick={() => { setMode(m); setSelectedCategory(null); setSelectedService(null); }}
+              onClick={() => { setMode(m); setSelectedCategory(null); setSelectedSubcategory(null); setSelectedService(null); }}
               className={`py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
                 mode === m ? "bg-primary text-white shadow-lg shadow-primary/20" : "glass-white text-muted-foreground border border-white/50"
               }`}
@@ -298,10 +310,10 @@ function NewOrderPage() {
         </div>
 
         <div className="max-w-md mx-auto space-y-3">
-          {activeCategories.map((cat) => (
+          {topLevelCategories.map((cat: any) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => { setSelectedCategory(cat); setSelectedSubcategory(null); }}
               className="w-full glass-white p-4 px-6 rounded-2xl card-shadow border border-white/50 flex items-center justify-between transition-all hover:bg-white active:scale-95 group"
             >
               <div className="flex items-center gap-4">
@@ -317,7 +329,7 @@ function NewOrderPage() {
               <ChevronRight className="text-primary w-5 h-5" />
             </button>
           ))}
-          {activeCategories.length === 0 && (
+          {topLevelCategories.length === 0 && (
             <div className="text-center py-10 text-muted-foreground font-bold uppercase tracking-widest text-xs">
               No categories available yet
             </div>
@@ -325,6 +337,50 @@ function NewOrderPage() {
         </div>
       </div>
     );
+  }
+
+  /* STEP 1.5 — Subcategories within the selected platform */
+  if (selectedCategory && !selectedSubcategory && !selectedService) {
+    const subs = subcategoriesOf(selectedCategory.id);
+    if (subs.length > 0) {
+      return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="relative flex items-center mb-4">
+            <button
+              onClick={goBack}
+              className="absolute left-0 w-10 h-10 flex items-center justify-center text-foreground transition-all active:scale-90"
+            >
+              <ArrowLeft size={24} strokeWidth={3} />
+            </button>
+            <h1 className="w-full text-center text-xl font-black text-foreground tracking-tight px-12">
+              {selectedCategory.name}
+            </h1>
+          </div>
+
+          <div className="max-w-md mx-auto space-y-3">
+            {subs.map((sub: any) => (
+              <button
+                key={sub.id}
+                onClick={() => setSelectedSubcategory(sub)}
+                className="w-full glass-white p-4 px-6 rounded-2xl card-shadow border border-white/50 flex items-center justify-between transition-all hover:bg-white active:scale-95 group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-110">
+                    <IconRenderer
+                      iconName={sub.icon || selectedCategory.icon}
+                      fallbackIcon={Globe}
+                      className="w-full h-full object-contain text-primary"
+                    />
+                  </div>
+                  <span className="font-black text-lg text-foreground tracking-tight">{sub.name}</span>
+                </div>
+                <ChevronRight className="text-primary w-5 h-5" />
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
@@ -339,14 +395,14 @@ function NewOrderPage() {
         <h1 className="w-full text-center text-xl font-black text-foreground tracking-tight px-12">
           {selectedService
             ? selectedService.name
-            : `${selectedCategory.name} Services`}
+            : `${effectiveCategory.name} Services`}
         </h1>
       </div>
 
       {/* STEP 2 — Services in selected category */}
       {!selectedService && (
         <div className="max-w-md mx-auto space-y-3">
-          {getServicesForCategory(selectedCategory.id).map((service) => (
+          {getServicesForCategory(effectiveCategory.id).map((service) => (
             <button
               key={service.id}
               onClick={() => setSelectedService(service)}
@@ -355,7 +411,7 @@ function NewOrderPage() {
               <div className="flex items-center gap-4 min-w-0 pr-4">
                 <div className="w-10 h-10 flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
                   <IconRenderer 
-                    iconName={service.icon || selectedCategory.icon} 
+                    iconName={service.icon || effectiveCategory.icon} 
                     fallbackIcon={Zap} 
                     className="w-full h-full object-contain text-blue-500" 
                   />
@@ -374,7 +430,7 @@ function NewOrderPage() {
               <ChevronRight className="text-primary w-5 h-5 shrink-0" />
             </button>
           ))}
-          {getServicesForCategory(selectedCategory.id).length === 0 && (
+          {getServicesForCategory(effectiveCategory.id).length === 0 && (
             <div className="text-center py-10 text-gray-400 font-bold uppercase tracking-widest text-xs">
               No services found in this category
             </div>

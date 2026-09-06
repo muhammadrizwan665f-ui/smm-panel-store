@@ -42,7 +42,8 @@ function ProviderServices() {
     markupType: 'percentage' as 'fixed' | 'percentage',
     markupAmount: 20,
     categoryId: '',
-    createNewCategory: ''
+    createNewCategory: '',
+    parentCategoryId: '',
   });
 
   const fetchData = async () => {
@@ -330,7 +331,8 @@ function ProviderServices() {
             <div className="p-8 space-y-6">
               {/* Category Selection */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Category</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Subcategory</label>
+                <p className="text-[9px] font-bold text-gray-400 uppercase">Customers see: Platform → Subcategory → these services</p>
                 <div className="grid grid-cols-1 gap-3">
                   <select 
                     value={importConfig.categoryId}
@@ -338,23 +340,41 @@ function ProviderServices() {
                     className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">Select an existing category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {categories.map((c: any) => (
+                      <option key={c.id} value={c.id}>
+                        {c.parent_category_id
+                          ? `— ${c.name} (under ${categories.find((p: any) => p.id === c.parent_category_id)?.name ?? "…"})`
+                          : `${c.name} (Platform)`}
+                      </option>
+                    ))}
                   </select>
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center" aria-hidden="true">
                       <div className="w-full border-t border-gray-100"></div>
                     </div>
                     <div className="relative flex justify-center text-[8px] font-black uppercase tracking-widest">
-                      <span className="bg-white px-2 text-gray-300">OR</span>
+                      <span className="bg-white px-2 text-gray-300">OR CREATE NEW SUBCATEGORY</span>
                     </div>
                   </div>
                   <input 
                     type="text"
-                    placeholder="Create new category..."
+                    placeholder="New subcategory name (e.g. Likes, Views)..."
                     value={importConfig.createNewCategory}
                     onChange={(e) => setImportConfig(prev => ({ ...prev, createNewCategory: e.target.value, categoryId: '' }))}
                     className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-100"
                   />
+                  {importConfig.createNewCategory && (
+                    <select
+                      value={importConfig.parentCategoryId}
+                      onChange={(e) => setImportConfig(prev => ({ ...prev, parentCategoryId: e.target.value }))}
+                      className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="">— No parent (this becomes a Platform) —</option>
+                      {categories.filter((c: any) => !c.parent_category_id).map((p: any) => (
+                        <option key={p.id} value={p.id}>Put under Platform: {p.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 

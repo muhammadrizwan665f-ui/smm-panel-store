@@ -24,11 +24,15 @@ function CategoriesPage() {
   const { data, loading, error, reload } = useAdminData<any[]>(() => adminListCategories());
   const [name, setName] = React.useState("");
   const [icon, setIcon] = React.useState("");
+  const [parentId, setParentId] = React.useState<string>("");
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [bulkIcon, setBulkIcon] = React.useState("");
   const [formUploading, setFormUploading] = React.useState(false);
   const [rowUploadingId, setRowUploadingId] = React.useState<string | null>(null);
   const categories = data ?? [];
+  const platforms = categories.filter((c) => !c.parent_category_id);
+  const categoryById: Record<string, any> = {};
+  categories.forEach((c) => { categoryById[c.id] = c; });
 
   const uploadForRow = async (category: any, file: File) => {
     setRowUploadingId(category.id);
@@ -48,10 +52,11 @@ function CategoriesPage() {
 
   const add = async () => {
     if (!name.trim()) return;
-    const res = JSON.parse(await adminSaveCategory({ data: { id: editingId || undefined, name: name.trim(), icon: icon.trim() } }));
+    const res = JSON.parse(await adminSaveCategory({ data: { id: editingId || undefined, name: name.trim(), icon: icon.trim(), parent_category_id: parentId || null } }));
     if (!res.success) { toast.error(res.message); return; }
     setName("");
     setIcon("");
+    setParentId("");
     setEditingId(null);
     toast.success(editingId ? "Category updated" : "Category saved");
     reload();
@@ -61,6 +66,7 @@ function CategoriesPage() {
     setEditingId(c.id);
     setName(c.name);
     setIcon(c.icon || "");
+    setParentId(c.parent_category_id || "");
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -139,6 +145,16 @@ function CategoriesPage() {
             placeholder="Lucide Icon Name or uploaded image URL"
             className="flex-1 px-4 py-3 bg-gray-50 rounded-2xl text-sm font-bold border-none focus:ring-2 focus:ring-blue-100"
           />
+          <select
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            className="px-4 py-3 bg-gray-50 rounded-2xl text-sm font-bold border-none focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">No parent — this is a Platform</option>
+            {platforms.filter((p) => p.id !== editingId).map((p) => (
+              <option key={p.id} value={p.id}>Subcategory of: {p.name}</option>
+            ))}
+          </select>
           <label className="px-6 py-3 rounded-2xl bg-gray-100 text-gray-600 text-xs font-black uppercase tracking-widest cursor-pointer flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors">
             {formUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
             Upload
@@ -174,12 +190,15 @@ function CategoriesPage() {
             {editingId ? "Update" : "Add"}
           </button>
           {editingId && (
-            <button onClick={() => { setEditingId(null); setName(""); setIcon(""); }} className="px-8 py-3 rounded-2xl bg-gray-100 text-gray-500 text-xs font-black uppercase tracking-widest transition-all active:scale-95">
+            <button onClick={() => { setEditingId(null); setName(""); setIcon(""); setParentId(""); }} className="px-8 py-3 rounded-2xl bg-gray-100 text-gray-500 text-xs font-black uppercase tracking-widest transition-all active:scale-95">
               Cancel
             </button>
           )}
         </div>
-        <p className="text-[10px] text-gray-400 font-bold uppercase italic">Tip: Use Lucide icon names like 'Instagram', 'Youtube', 'Zap', 'Heart', 'Users'.</p>
+        <p className="text-[10px] text-gray-400 font-bold uppercase italic">
+          Tip: First create top-level Platforms (Instagram, Facebook, YouTube...). Then add Subcategories (Likes,
+          Views, Followers...) under each one — that's what customers pick after choosing a platform.
+        </p>
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
@@ -222,7 +241,9 @@ function CategoriesPage() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-black text-gray-900">{c.name}</span>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Icon: {c.icon || "None"}</span>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                          {c.parent_category_id ? `Subcategory of ${categoryById[c.parent_category_id]?.name ?? "…"}` : "Platform"}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold uppercase text-gray-500">
@@ -256,7 +277,9 @@ function CategoriesPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-black text-gray-900 truncate">{c.name}</p>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter truncate">{c.icon || "No icon"}</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter truncate">
+                      {c.parent_category_id ? `Subcategory of ${categoryById[c.parent_category_id]?.name ?? "…"}` : "Platform"}
+                    </p>
                     <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${c.status === 'inactive' ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
                       {c.status ?? "active"}
                     </span>

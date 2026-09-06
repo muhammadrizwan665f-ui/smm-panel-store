@@ -17,11 +17,12 @@ export const importServices = createServerFn({ method: "POST" })
     markupAmount: number;
     categoryId?: string; // Target category
     createNewCategory?: string; // Name for new category if needed
+    parentCategoryId?: string; // If creating a new category, which platform it belongs under
   })
   .handler(async ({ data, context }) => {
     const supabaseAdmin = (context as any)?.supabase;
 
-    const { providerId, serviceIds, markupType, markupAmount, categoryId, createNewCategory } = data;
+    const { providerId, serviceIds, markupType, markupAmount, categoryId, createNewCategory, parentCategoryId } = data;
     
     // 1. Fetch global currency settings
     const { data: settingsData } = await supabaseAdmin
@@ -68,7 +69,7 @@ export const importServices = createServerFn({ method: "POST" })
     if (createNewCategory) {
       const { data: newCat, error: catError } = await supabaseAdmin
         .from('service_categories')
-        .upsert({ name: createNewCategory }, { onConflict: 'name' })
+        .upsert({ name: createNewCategory, parent_category_id: parentCategoryId || null }, { onConflict: 'name' })
         .select('id')
         .single();
 
