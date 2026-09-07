@@ -1,7 +1,7 @@
 import React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminListReferrals, adminPayCommission } from "@/lib/referrals.functions";
+import { adminListReferrals, adminPayCommission, getReferralSettings, updateReferralSettings } from "@/lib/referrals.functions";
 import { Loader2, Gift } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +20,30 @@ function parse<T>(res: unknown, fallback: T): T {
 function ReferralsAdminPage() {
   const qc = useQueryClient();
   const [amounts, setAmounts] = React.useState<Record<string, string>>({});
+
+  const { data: settings } = useQuery({
+    queryKey: ["referralSettings"],
+    queryFn: async () => parse<{ enabled: boolean; percent: number }>(await getReferralSettings(), { enabled: true, percent: 10 }),
+  });
+  const [enabled, setEnabled] = React.useState<boolean | null>(null);
+  const [percent, setPercent] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (settings) {
+      setEnabled(settings.enabled);
+      setPercent(String(settings.percent));
+    }
+  }, [settings]);
+
+  const saveSettings = useMutation({
+    mutationFn: async (v: { enabled: boolean; percent: number }) =>
+      parse<{ success: boolean }>(await updateReferralSettings({ data: v }), { success: false }),
+    onSuccess: (res) => {
+      if (!res.success) { toast.error("Failed to save"); return; }
+      toast.success("Referral settings saved");
+      qc.invalidateQueries({ queryKey: ["referralSettings"] });
+    },
+    onError: () => toast.error("Failed to save"),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["adminReferrals"],
@@ -53,6 +77,44 @@ function ReferralsAdminPage() {
       <div className="flex items-center gap-3">
         <Gift className="text-primary" />
         <h1 className="text-xl font-black uppercase tracking-tight">Referrals</h1>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+        <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Commission Settings</p>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <label className="flex items-center gap-2 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={enabled ?? true}
+              onChange={(e) => setEnabled(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Automatically pay commission on every deposit
+          </label>
+          <label className="flex items-center gap-2 text-sm font-bold">
+            Commission %
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value={percent ?? "10"}
+              onChange={(e) => setPercent(e.target.value)}
+              className="w-24 rounded-xl border border-border bg-background px-3 py-1.5 text-sm font-bold"
+            />
+          </label>
+          <button
+            disabled={saveSettings.isPending || enabled === null}
+            onClick={() => saveSettings.mutate({ enabled: !!enabled, percent: Number(percent) || 0 })}
+            className="rounded-xl bg-primary px-4 py-2 text-xs font-black uppercase tracking-widest text-primary-foreground active:scale-95 disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          When enabled, every approved deposit automatically credits the depositor's referrer's wallet with this
+          percentage — no manual action needed. The manual "Pay Commission" button below still works for one-off bonuses.
+        </p>
       </div>
 
       {isLoading ? (

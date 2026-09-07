@@ -162,6 +162,44 @@ async function creditWallet(supabaseAdmin: any, userId: string, amount: number, 
   return next;
 }
 
+async function payReferralCommissionIfDue(supabaseAdmin: any, depositUserId: string, depositAmount: number, depositId: string) {
+  const { data: settingsRows } = await supabaseAdmin
+    .from("site_settings")
+    .select("key, value")
+    .in("key", ["referral_enabled", "referral_commission_percent"]);
+  const settings: Record<string, string> = {};
+  (settingsRows ?? []).forEach((r: any) => { settings[r.key] = r.value; });
+
+  if (settings.referral_enabled !== "true") return;
+  const pct = parseFloat(settings.referral_commission_percent ?? "10");
+  if (!pct || pct <= 0) return;
+
+  const { data: depositor } = await supabaseAdmin
+    .from("profiles")
+    .select("referred_by")
+    .eq("id", depositUserId)
+    .maybeSingle();
+  const referrerId = depositor?.referred_by;
+  if (!referrerId) return; // this user wasn't referred by anyone
+
+  const amount = Math.round((depositAmount * pct / 100) * 100) / 100;
+  if (amount <= 0) return;
+
+  // referral_commissions.deposit_id is unique — this insert fails harmlessly
+  // if this exact deposit's commission was already paid (e.g. a retry),
+  // so we never double-credit the referrer's wallet.
+  const { error: insertErr } = await supabaseAdmin.from("referral_commissions").insert({
+    referrer_id: referrerId,
+    referred_id: depositUserId,
+    amount,
+    deposit_id: depositId,
+    note: `${pct}% auto commission on deposit`,
+  });
+  if (insertErr) return; // duplicate (already paid) or other issue — don't credit twice
+
+  await creditWallet(supabaseAdmin, referrerId, amount, `Referral commission (${pct}% of deposit)`);
+}
+
 export const adminReviewDeposit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) =>
@@ -189,6 +227,7 @@ export const adminReviewDeposit = createServerFn({ method: "POST" })
         gateway_transaction_id: dep.utr,
         reference: dep.id,
       });
+      await payReferralCommissionIfDue(supabaseAdmin, dep.user_id, Number(dep.amount), dep.id);
     }
 
     await supabaseAdmin

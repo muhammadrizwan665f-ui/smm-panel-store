@@ -9,6 +9,14 @@ function fail(message: string) {
   return JSON.stringify({ success: false, message, data: [] });
 }
 
+async function assertAdmin(context: any) {
+  const { data: isAdmin } = await context.supabase.rpc("has_role", {
+    _user_id: String(context.userId),
+    _role: "admin",
+  });
+  if (!isAdmin) throw new Error("Forbidden");
+}
+
 export const adminGetProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string })
@@ -96,8 +104,9 @@ export const adminDeleteCategory = createServerFn({ method: "POST" })
 export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertAdmin(context);
     const supabaseAdmin = (context as any)?.supabase;
-    
+
     // 1. Fetch profiles
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from("profiles")
@@ -108,9 +117,12 @@ export const adminListUsers = createServerFn({ method: "GET" })
     if (profileError) return fail(profileError.message);
     if (!profiles) return ok([]);
 
-    // 2. Fetch auth user emails using service role
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-    
+    // 2. Fetch auth user emails — auth.admin.* requires the real service-role
+    // client, not the regular (anon-key + user JWT) one: it was silently
+    // failing here before, so every user's email showed up blank.
+    const { supabaseAdmin: serviceClient } = await import("@/integrations/supabase/client.server");
+    const { data: authUsers, error: authError } = await serviceClient.auth.admin.listUsers();
+
     const emailMap: Record<string, string> = {};
     if (!authError && authUsers?.users) {
       authUsers.users.forEach((u: any) => {
@@ -131,15 +143,22 @@ export const adminImpersonateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = (context as any)?.supabase;
-    
+    await assertAdmin(context);
+
+    // auth.admin.getUserById / generateLink are privileged Supabase Auth API
+    // calls — they require the real service-role client. The regular
+    // (anon-key) client used everywhere else always returned an error here,
+    // which is why this previously failed with "User not found" for every
+    // user, real or not.
+    const { supabaseAdmin: serviceClient } = await import("@/integrations/supabase/client.server");
+
     // Safety check: is the targeted user a real user?
-    const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const { data: user, error: userError } = await serviceClient.auth.admin.getUserById(data.userId);
     if (userError || !user?.user) return fail("User not found");
 
     // Generate a magic link / recovery link that we can extract tokens from
     // or just generate a login link. generateLink is the most flexible.
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
       type: 'magiclink',
       email: user.user.email!,
     });
