@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAdminData, AdminState } from "@/components/admin/AdminData";
-import { adminListUsers, adminAdjustWallet, adminImpersonateUser } from "@/lib/admin/admin.functions";
+import { adminListUsers, adminAdjustWallet, adminImpersonateUser, adminViewUser } from "@/lib/admin/admin.functions";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Minus, Wallet, LogIn } from "lucide-react";
+import { Plus, Minus, Wallet, LogIn, Eye, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/management/users")({
@@ -17,6 +18,30 @@ function UsersPage() {
   const [adjustingId, setAdjustingId] = React.useState<string | null>(null);
   const [amount, setAmount] = React.useState<string>("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [viewUserId, setViewUserId] = React.useState<string | null>(null);
+  const [viewData, setViewData] = React.useState<any>(null);
+  const [viewLoading, setViewLoading] = React.useState(false);
+
+  const handleView = async (userId: string) => {
+    setViewUserId(userId);
+    setViewLoading(true);
+    setViewData(null);
+    try {
+      const resJson = await adminViewUser({ data: { userId } });
+      const res = JSON.parse(resJson as string);
+      if (res.success) {
+        setViewData(res.data);
+      } else {
+        toast.error(res.message || "Failed to load user details");
+        setViewUserId(null);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "System error");
+      setViewUserId(null);
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
   const handleAdjust = async (userId: string, type: 'add' | 'cut') => {
     const numAmount = parseFloat(amount);
@@ -175,6 +200,14 @@ function UsersPage() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
+                              className="h-8 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-50 text-emerald-600"
+                              onClick={() => handleView(u.id)}
+                            >
+                              <Eye className="h-3 w-3 mr-1" /> View
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
                               className="h-8 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-50 text-blue-600"
                               onClick={() => handleImpersonate(u.id)}
                             >
@@ -192,6 +225,97 @@ function UsersPage() {
           </div>
         </AdminState>
       </div>
+
+      <Dialog open={!!viewUserId} onOpenChange={(open) => { if (!open) { setViewUserId(null); setViewData(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="uppercase font-black tracking-tight">
+              {viewData?.profile?.mobile_number || "User"} — Account Overview
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewLoading ? (
+            <div className="flex justify-center py-12 text-muted-foreground"><Loader2 className="animate-spin" /></div>
+          ) : viewData ? (
+            <div className="space-y-6 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border p-3">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Wallet Balance</p>
+                  <p className="text-lg font-black text-blue-600">Rs.{Number(viewData.profile?.wallet_balance || 0).toFixed(2)}</p>
+                </div>
+                <div className="rounded-xl border p-3">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Email</p>
+                  <p className="font-bold">{viewData.profile?.email || "—"}</p>
+                </div>
+                <div className="rounded-xl border p-3">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Referral Code</p>
+                  <p className="font-bold">{viewData.profile?.referral_code || "—"}</p>
+                </div>
+                <div className="rounded-xl border p-3">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Referred By</p>
+                  <p className="font-bold">{viewData.referred_by?.mobile_number || "—"}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2">
+                  Referred Users ({viewData.referred_users?.length ?? 0}) · Commission earned: Rs.{Number(viewData.commission_earned || 0).toFixed(2)}
+                </p>
+                {(viewData.referred_users ?? []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No referrals yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {viewData.referred_users.map((r: any) => (
+                      <div key={r.id} className="flex justify-between rounded-lg bg-muted/50 px-3 py-1.5 text-xs">
+                        <span className="font-bold">{r.mobile_number}</span>
+                        <span className="text-muted-foreground">{new Date(r.joined_at).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2">
+                  Recent Orders ({viewData.recent_orders?.length ?? 0})
+                </p>
+                {(viewData.recent_orders ?? []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No orders yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {viewData.recent_orders.map((o: any) => (
+                      <div key={o.id} className="flex justify-between rounded-lg bg-muted/50 px-3 py-1.5 text-xs">
+                        <span className="font-bold truncate max-w-[60%]">{o.service_name || o.platform}</span>
+                        <span>Rs.{Number(o.price).toFixed(2)} · {o.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2">
+                  Recent Wallet Transactions ({viewData.recent_transactions?.length ?? 0})
+                </p>
+                {(viewData.recent_transactions ?? []).length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No transactions yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {viewData.recent_transactions.map((t: any) => (
+                      <div key={t.id} className="flex justify-between rounded-lg bg-muted/50 px-3 py-1.5 text-xs">
+                        <span className="font-bold">{t.description || t.type}</span>
+                        <span className={t.type === "credit" ? "text-green-600" : "text-red-600"}>
+                          {t.type === "credit" ? "+" : "-"}Rs.{Number(t.amount).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -122,6 +122,18 @@ export const adminListUsers = createServerFn({ method: "GET" })
     return ok(profiles ?? []);
   });
 
+/** Admin: read-only snapshot of a user (profile, orders, transactions,
+ * referrals) — works without the service-role key, unlike real impersonation. */
+export const adminViewUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d?.data ?? d))
+  .handler(async ({ data, context }) => {
+    const supabase = (context as any)?.supabase;
+    const { data: result, error } = await supabase.rpc("admin_view_user", { p_user_id: data.userId });
+    if (error) return fail(error.message);
+    return ok(result);
+  });
+
 export const adminImpersonateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d))
