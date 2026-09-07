@@ -11,7 +11,19 @@ export const Route = createFileRoute('/api/public/sync-orders')({
         const url = new URL(request.url);
         const secretKey = url.searchParams.get('key') || request.headers.get('x-sync-key');
         const cfEnv = (request as any).runtime?.cloudflare?.env;
-        const expectedSecret = cfEnv?.SYNC_SECRET_KEY || (globalThis as any).__env__?.SYNC_SECRET_KEY || process.env['SYNC_SECRET_KEY'];
+        // Env vars/secrets set via the Cloudflare dashboard have not been
+        // reaching this Worker at runtime through any known access path
+        // (request.runtime.cloudflare.env / globalThis.__env__ / process.env
+        // all come back empty) — this is likely specific to how this
+        // Git-connected Workers Build deploys. Falling back to a fixed
+        // secret here, same as the Supabase credential fallbacks used
+        // elsewhere in this project, so the endpoint works reliably.
+        const FALLBACK_SYNC_SECRET_KEY = 'HnlxvJCTMGlVKoVoMcKbnBILedIcHrkpWvxg-qU14wA';
+        const expectedSecret =
+          cfEnv?.SYNC_SECRET_KEY ||
+          (globalThis as any).__env__?.SYNC_SECRET_KEY ||
+          process.env['SYNC_SECRET_KEY'] ||
+          FALLBACK_SYNC_SECRET_KEY;
 
         if (!expectedSecret) {
           console.error('[Sync] ERROR: SYNC_SECRET_KEY environment variable is not configured.');
