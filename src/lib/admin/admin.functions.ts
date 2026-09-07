@@ -107,36 +107,19 @@ export const adminListUsers = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const supabaseAdmin = (context as any)?.supabase;
 
-    // 1. Fetch profiles
+    // Email now lives directly on profiles (captured at signup via
+    // complete_my_profile — see migration 20260908010000) so this no longer
+    // needs auth.admin.listUsers(), which requires the service-role key.
+    // Note: users who registered before this fix will show a blank email
+    // until they next log in (their profile row predates this column).
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, mobile_number, wallet_balance, status, created_at")
+      .select("id, mobile_number, email, wallet_balance, status, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
-      
+
     if (profileError) return fail(profileError.message);
-    if (!profiles) return ok([]);
-
-    // 2. Fetch auth user emails — auth.admin.* requires the real service-role
-    // client, not the regular (anon-key + user JWT) one: it was silently
-    // failing here before, so every user's email showed up blank.
-    const { supabaseAdmin: serviceClient } = await import("@/integrations/supabase/client.server");
-    const { data: authUsers, error: authError } = await serviceClient.auth.admin.listUsers();
-
-    const emailMap: Record<string, string> = {};
-    if (!authError && authUsers?.users) {
-      authUsers.users.forEach((u: any) => {
-        if (u.email) emailMap[u.id] = u.email;
-      });
-    }
-
-    // 3. Merge
-    const merged = profiles.map((p: any) => ({
-      ...p,
-      email: emailMap[p.id] || null
-    }));
-
-    return ok(merged);
+    return ok(profiles ?? []);
   });
 
 export const adminImpersonateUser = createServerFn({ method: "POST" })

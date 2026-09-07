@@ -74,7 +74,6 @@ export const signUp = createServerFn({ method: "POST" })
 export const completeProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const userId = context.userId;
 
     if (!userId) {
@@ -83,37 +82,32 @@ export const completeProfile = createServerFn({ method: "POST" })
     }
 
     try {
-      // Bypassing any User object that might trigger the seroval-plugin-supabase error
-      const { data: userRows, error: userError } = await supabaseAdmin
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .single();
-      
-      // We check if it exists or create it
-      const { data: { user }, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
-      
-      if (authUserError || !user) {
-         return { success: false, error: "Auth user not found" };
+      // Uses the already-validated JWT claims from auth middleware — no
+      // fresh privileged lookup needed, since this data is already on the
+      // user's own token. Writes go through a SECURITY DEFINER RPC
+      // (complete_my_profile) rather than the service-role client, so
+      // signup no longer depends on SUPABASE_SERVICE_ROLE_KEY being
+      // configured at all.
+      const user = (context as any).claims;
+      if (!user) {
+        return { success: false, error: "Auth user not found" };
       }
 
       const userMetadata = (user.user_metadata || {}) as any;
       const mobileNumber = userMetadata['mobile_number'] || user.email?.split('@')[0];
+      // Only store a real email (not the synthetic "xxxxx@mobile.panel"
+      // placeholder used for mobile-only signups).
+      const realEmail = user.email && !user.email.endsWith('@mobile.panel') ? user.email : null;
 
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .upsert({
-          id: userId,
-          mobile_number: mobileNumber,
-          wallet_balance: 0
-        }, { onConflict: 'id' });
-
-      const { error: roleError } = await supabaseAdmin
-        .from('user_roles')
-        .upsert({
-          user_id: userId,
-          role: 'user' as any
-        }, { onConflict: 'user_id, role' });
+      const supabase = (context as any).supabase;
+      const { error } = await supabase.rpc("complete_my_profile", {
+        p_mobile_number: mobileNumber,
+        p_email: realEmail,
+      });
+      if (error) {
+        console.error("completeProfile RPC error:", error.message);
+        return { success: false, error: error.message };
+      }
 
       return { success: true };
     } catch (e: any) {
