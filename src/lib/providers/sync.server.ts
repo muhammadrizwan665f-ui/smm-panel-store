@@ -1,38 +1,28 @@
 import { ProviderAdapterFactory } from "./generic-adapter";
 
-/** Syncs a single order against its provider. Server-only. */
-export async function syncOneOrder(orderId: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-  const { data: orderData, error: orderError } = await (supabaseAdmin as any)
-    .from("orders")
-    .select(`
-      *,
-      provider:providers (
-        api_url,
-        api_key,
-        api_version
-      )
-    `)
-    .eq("id", orderId)
-    .single();
-
-  if (orderError || !orderData || !orderData.provider_order_id) {
-    throw new Error("Order not found or no provider ID");
-  }
-
-  const order = {
-    ...orderData,
-    api_url: orderData.provider?.api_url,
-    api_key: orderData.provider?.api_key,
-    api_version: orderData.provider?.api_version,
-  };
+/**
+ * Syncs a single order against its provider. Server-only.
+ * Uses the public (anon-key) client — the actual DB reads/writes go
+ * through SECURITY DEFINER RPC functions, so no service_role key
+ * is required even though this runs outside any user session.
+ */
+export async function syncOneOrder(order: {
+  id: string;
+  status: string;
+  provider_order_id: string;
+  price: number;
+  user_id: string;
+  api_url: string | null;
+  api_key: string | null;
+  api_version: string | null;
+}) {
+  const { supabase } = await import("@/integrations/supabase/client");
 
   if (!order.api_url || !order.api_key) {
     throw new Error("Provider API configuration missing for status sync");
   }
 
-  const adapter = ProviderAdapterFactory.getAdapter(order.api_version, order.api_url, order.api_key);
+  const adapter = ProviderAdapterFactory.getAdapter(order.api_version || "v2", order.api_url, order.api_key);
   const statusRes = await adapter.getOrderStatus(order.provider_order_id);
 
   let internalStatus = order.status;
@@ -58,60 +48,37 @@ export async function syncOneOrder(orderId: string) {
 
   const { readBranding } = await import("@/lib/settings/branding.server");
   const autoRefundEnabled = (await readBranding()).auto_refund_enabled;
+  const shouldRefund = autoRefundEnabled && internalStatus === "failed" && order.status !== "failed";
 
-  if (autoRefundEnabled && internalStatus === "failed" && order.status !== "failed") {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("wallet_balance")
-      .eq("id", order.user_id)
-      .single();
-    const currentBalance = Number(profile?.wallet_balance || 0);
-
-    await (supabaseAdmin as any)
-      .from("profiles")
-      .update({ wallet_balance: currentBalance + Number(order.price) })
-      .eq("id", order.user_id);
-
-    await (supabaseAdmin as any).from("wallet_transactions").insert({
-      user_id: order.user_id,
-      amount: Number(order.price),
-      type: "refund",
-      status: "completed",
-      description: `Auto-refund for failed/canceled Order #${orderId.slice(0, 8)} (${providerStatus})`,
-    });
-  }
-
-  const { error: finalUpdateError } = await (supabaseAdmin as any)
-    .from("orders")
-    .update({ status: internalStatus, provider_response: statusRes as any })
-    .eq("id", orderId);
-  if (finalUpdateError) throw finalUpdateError;
+  const { error } = await (supabase as any).rpc("rpc_apply_sync_result", {
+    _order_id: order.id,
+    _internal_status: internalStatus,
+    _provider_response: statusRes as any,
+    _do_refund: shouldRefund,
+    _refund_description: shouldRefund
+      ? `Auto-refund for failed/canceled Order #${order.id.slice(0, 8)} (${providerStatus})`
+      : null,
+  });
+  if (error) throw new Error(error.message);
 
   return { status: internalStatus, provider: statusRes };
 }
 
 /** Syncs all pending API orders (optionally only for one user). Server-only. */
 export async function syncPendingOrders(opts: { userId?: string; limit?: number } = {}) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabase } = await import("@/integrations/supabase/client");
 
-  let q = (supabaseAdmin as any)
-    .from("orders")
-    .select("id")
-    .not("status", "in", '("completed","failed","cancelled","refunded")')
-    .not("provider_order_id", "is", null)
-    .order("updated_at", { ascending: true })
-    .limit(opts.limit ?? 25);
-
-  if (opts.userId) q = q.eq("user_id", opts.userId);
-
-  const { data: orders, error } = await q;
+  const { data: orders, error } = await (supabase as any).rpc("rpc_list_pending_sync_orders", {
+    _limit: opts.limit ?? 25,
+    _user_id: opts.userId ?? null,
+  });
   if (error) throw new Error(error.message);
   if (!orders?.length) return { synced: 0, results: [] as any[] };
 
   const results: any[] = [];
-  for (const o of orders) {
+  for (const o of orders as any[]) {
     try {
-      const res = await syncOneOrder(o.id);
+      const res = await syncOneOrder(o);
       results.push({ id: o.id, ok: true, status: res.status });
     } catch (err: any) {
       results.push({ id: o.id, ok: false, message: err?.message });

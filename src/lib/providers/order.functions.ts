@@ -240,6 +240,10 @@ export const syncOrderStatusInternal = createServerFn({ method: "POST" })
   .inputValidator((d: any) => d as { orderId: string })
   .handler(async (args: any) => {
     const { syncOneOrder } = await import("./sync.server");
-    const res = await syncOneOrder(args.data.orderId);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: orders } = await (supabase as any).rpc("rpc_list_pending_sync_orders", { _limit: 1000, _user_id: null });
+    const order = (orders as any[])?.find((o) => o.id === args.data.orderId);
+    if (!order) throw new Error("Order not found or not eligible for sync");
+    const res = await syncOneOrder(order);
     return JSON.stringify(res.provider);
   });
