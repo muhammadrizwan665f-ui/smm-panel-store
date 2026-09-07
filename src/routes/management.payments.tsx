@@ -25,6 +25,7 @@ const emptyForm = {
   access_token: "",
   qr_image_url: "",
   account_number: "",
+  account_title: "",
   iban: "",
   mobile_number: "",
   has_access_token: false,
@@ -66,6 +67,7 @@ function PaymentsPage() {
             access_token: form.access_token || null,
             qr_image_url: form.qr_image_url || null,
             account_number: form.account_number || null,
+            account_title: form.account_title || null,
             iban: form.iban || null,
             mobile_number: form.mobile_number || null,
             fee_percent: Number(form.fee_percent) || 0,
@@ -114,6 +116,7 @@ function PaymentsPage() {
       access_token: "",
       qr_image_url: g.qr_image_url ?? "",
       account_number: g.account_number ?? "",
+      account_title: g.account_title ?? "",
       iban: g.iban ?? "",
       mobile_number: g.mobile_number ?? "",
       has_access_token: !!g.has_access_token,
@@ -191,6 +194,9 @@ function PaymentsPage() {
             <>
               <Field label="Account Number">
                 <input value={form.account_number} onChange={(e) => set("account_number", e.target.value)} className={inputCls} placeholder="Bank account or wallet number" />
+              </Field>
+              <Field label="Account Title (name on the account)">
+                <input value={form.account_title} onChange={(e) => set("account_title", e.target.value)} className={inputCls} placeholder="e.g. Muhammad Rizwan" />
               </Field>
               <Field label="IBAN / Swift (Optional)">
                 <input value={form.iban} onChange={(e) => set("iban", e.target.value)} className={inputCls} placeholder="IBAN number" />

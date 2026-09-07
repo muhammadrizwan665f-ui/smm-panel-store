@@ -39,6 +39,7 @@ const gatewaySchema = z.object({
   access_token: z.string().nullable().optional(),
   api_url: z.string().nullable().optional(),
   account_number: z.string().nullable().optional(),
+  account_title: z.string().nullable().optional(),
   iban: z.string().nullable().optional(),
   mobile_number: z.string().nullable().optional(),
   fee_percent: z.number().min(0).max(100).default(0),
@@ -211,7 +212,7 @@ export const listActiveGateways = createServerFn({ method: "POST" })
     const { data, error } = await supabaseAdmin
       .from("payment_gateways")
       .select(
-        "id, name, provider, type, qr_image_url, instructions, min_amount, max_amount, fee_percent, bonus_percent, bonus_start_amount, expiry_minutes, merchant_id, access_token, account_number, iban, mobile_number",
+        "id, name, provider, type, qr_image_url, instructions, min_amount, max_amount, fee_percent, bonus_percent, bonus_start_amount, expiry_minutes, merchant_id, access_token, account_number, account_title, iban, mobile_number",
       )
       .eq("status", "active")
       .order("display_order", { ascending: true });

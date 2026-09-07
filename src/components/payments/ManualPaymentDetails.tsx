@@ -101,6 +101,20 @@ export function ManualPaymentDetails({
           )}
 
           <div className="space-y-3">
+            {gateway.account_title && (
+              <div className="glass-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
+                <div>
+                  <div className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Account Title (Name)</div>
+                  <div className="text-sm font-black text-foreground">{gateway.account_title}</div>
+                </div>
+                <button
+                  onClick={() => handleCopy(gateway.account_title, "Account Title")}
+                  className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                >
+                  {copied === "Account Title" ? <Check size={16} /> : <Copy size={16} />}
+                </button>
+              </div>
+            )}
             {gateway.account_number && (
               <div className="glass-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between">
                 <div>
@@ -147,14 +161,17 @@ export function ManualPaymentDetails({
 
           <div className="space-y-3 pt-2">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Enter Transaction UTR / ID</label>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Enter Last 4 Digits of Your Transaction ID</label>
               <input 
                 value={utr}
                 onChange={(e) => setUtr(e.target.value)}
-                placeholder="Paste UTR here after payment"
+                placeholder="e.g. 4821"
                 className="w-full bg-secondary/50 border-none rounded-2xl p-4 text-xs font-black placeholder:text-muted-foreground/30 focus:ring-2 focus:ring-primary/20"
               />
             </div>
+            <p className="text-[10px] text-center font-black text-primary uppercase tracking-widest">
+              Funds will be auto-added to your wallet within 5–10 minutes
+            </p>
             <button 
               onClick={handleSubmit}
               disabled={submitting}
@@ -165,7 +182,7 @@ export function ManualPaymentDetails({
           </div>
           
           <p className="text-[9px] text-center text-muted-foreground font-bold uppercase tracking-widest leading-relaxed">
-            Payment will be verified manually by our team within 30-60 minutes.
+            Please double-check the account title matches before sending payment.
           </p>
         </div>
       </div>
