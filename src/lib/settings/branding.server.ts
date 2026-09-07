@@ -55,10 +55,16 @@ export async function readBranding(): Promise<BrandingSettings> {
   };
 }
 
-export async function isAdminUser(userId: string | null): Promise<boolean> {
+export async function isAdminUser(userId: string | null, supabaseClient?: any): Promise<boolean> {
   if (!userId) return false;
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin
+  if (supabaseClient) {
+    const { data } = await supabaseClient.rpc("has_role", { _user_id: userId, _role: "admin" });
+    return !!data;
+  }
+  // Fallback (no scoped client provided): use the public client directly against
+  // user_roles, relying on the "users read own roles" RLS policy.
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)

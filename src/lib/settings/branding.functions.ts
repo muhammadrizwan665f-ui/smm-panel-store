@@ -11,10 +11,10 @@ export const adminUpdateBranding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as Partial<BrandingSettings>)
   .handler(async ({ data, context }) => {
-    if (!(await isAdminUser((context as any).userId))) {
+    const supabaseAdmin = (context as any)?.supabase;
+    if (!(await isAdminUser((context as any).userId, supabaseAdmin))) {
       return JSON.stringify({ success: false, message: "Admin access required" });
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const rows = [
       { key: "brand_name", value: (data.brand_name ?? "").trim() },
@@ -40,7 +40,7 @@ export const adminUpdateCredentials = createServerFn({ method: "POST" })
   .inputValidator((d: any) => d as { email?: string; password?: string })
   .handler(async ({ data, context }) => {
     const userId = (context as any).userId as string | null;
-    if (!(await isAdminUser(userId))) {
+    if (!(await isAdminUser(userId, (context as any)?.supabase))) {
       return JSON.stringify({ success: false, message: "Admin access required" });
     }
 
@@ -56,6 +56,9 @@ export const adminUpdateCredentials = createServerFn({ method: "POST" })
       return JSON.stringify({ success: false, message: "Nothing to update" });
     }
 
+    // NOTE: changing another user's auth email/password genuinely requires
+    // the Supabase Auth Admin API, which only works with the real
+    // service_role key — there is no RLS-based workaround for this one.
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId as string, {
       ...payload,
@@ -70,10 +73,10 @@ export const adminCancelRefundOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { orderId: string; refund?: boolean })
   .handler(async ({ data, context }) => {
-    if (!(await isAdminUser((context as any).userId))) {
+    const supabaseAdmin = (context as any)?.supabase;
+    if (!(await isAdminUser((context as any).userId, supabaseAdmin))) {
       return JSON.stringify({ success: false, message: "Admin access required" });
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: order, error: orderErr } = await supabaseAdmin
       .from("orders")

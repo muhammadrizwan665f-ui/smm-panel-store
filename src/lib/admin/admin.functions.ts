@@ -332,6 +332,33 @@ export const adminBulkUpdateCategoryIcons = createServerFn({ method: "POST" })
     return ok(true);
   });
 
+/**
+ * Bulk-sets one icon on every service whose NAME contains a given keyword —
+ * e.g. set one icon for every "Likes" service across every platform in a
+ * single action, instead of doing it one-by-one or one-category-at-a-time.
+ */
+export const adminBulkUpdateServiceIconsByKeyword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => z.object({ keyword: z.string().min(1), icon: z.string().min(1) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+
+    const { data: matches, error: findError } = await supabaseAdmin
+      .from("services")
+      .select("id")
+      .ilike("name", `%${data.keyword}%`);
+    if (findError) return fail(findError.message);
+    if (!matches || matches.length === 0) return ok({ updated: 0 });
+
+    const { error } = await supabaseAdmin
+      .from("services")
+      .update({ icon: data.icon })
+      .in("id", matches.map((s: any) => s.id));
+    if (error) return fail(error.message);
+
+    return ok({ updated: matches.length });
+  });
+
 export const adminAdjustWallet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string(), amount: z.number(), type: z.enum(['add', 'cut']), description: z.string().optional() }).parse(d))

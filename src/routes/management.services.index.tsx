@@ -25,7 +25,7 @@ import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getInternalServices, updateServiceStatus, deleteService } from "@/lib/providers/management.functions";
-import { adminSaveService } from "@/lib/admin/admin.functions";
+import { adminSaveService, adminBulkUpdateServiceIconsByKeyword } from "@/lib/admin/admin.functions";
 import { getCurrencySettings } from "@/lib/settings.functions";
 import { recalculateServicePrices } from "@/lib/providers/provider.functions";
 import { uploadIconFile, isImageIcon } from "@/lib/upload-icon";
@@ -52,6 +52,9 @@ function ServicesPage() {
   const [isRecalculating, setIsRecalculating] = React.useState(false);
   const [bulkIcon, setBulkIcon] = React.useState("");
   const [bulkCategory, setBulkCategory] = React.useState("all");
+  const [keywordIcon, setKeywordIcon] = React.useState("");
+  const [keywordText, setKeywordText] = React.useState("");
+  const [keywordUploading, setKeywordUploading] = React.useState(false);
 
   const [editingService, setEditingService] = React.useState<any>(null);
   const [rowUploadingId, setRowUploadingId] = React.useState<string | null>(null);
@@ -145,38 +148,37 @@ function ServicesPage() {
     }
   };
 
-  const handleApplyKeywordIcon = async () => {
-    const keyword = prompt("Enter a keyword to match service names (e.g., 'Instagram', 'TikTok'):");
-    if (!keyword) return;
-    
-    const icon = prompt("Enter the Lucide icon name to apply (e.g., 'Instagram', 'Zap'):");
-    if (!icon) return;
-
+  const handleBulkIconByKeyword = async () => {
+    if (!keywordText.trim() || !keywordIcon.trim()) {
+      toast.error("Enter a keyword (e.g. Like, View, Share) and an icon");
+      return;
+    }
     setLoading(true);
     try {
-      const { data: matchedServices } = await supabase
-        .from('services')
-        .select('id')
-        .ilike('name', `%${keyword}%`);
-      
-      if (!matchedServices || matchedServices.length === 0) {
-        toast.info(`No services found matching '${keyword}'`);
-        return;
-      }
-
-      if (!confirm(`Apply icon '${icon}' to ${matchedServices.length} services matching '${keyword}'?`)) return;
-
-      const promises = matchedServices.map(s => adminSaveService({ data: { id: s.id, icon: icon.trim() } }));
-      await Promise.all(promises);
-      
-      toast.success(`Updated ${matchedServices.length} services with icon: ${icon}`);
+      const res = JSON.parse(await adminBulkUpdateServiceIconsByKeyword({ data: { keyword: keywordText.trim(), icon: keywordIcon.trim() } }));
+      if (!res.success) { toast.error(res.message); return; }
+      toast.success(`Updated ${res.data.updated} services matching "${keywordText}" — across every platform`);
       fetchData();
     } catch (error: any) {
-      toast.error("Keyword bulk update failed");
+      toast.error(error.message || "Bulk update failed");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleKeywordIconUpload = async (file: File) => {
+    setKeywordUploading(true);
+    try {
+      const url = await uploadIconFile(file);
+      setKeywordIcon(url);
+      toast.success("Icon uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setKeywordUploading(false);
+    }
+  };
+
 
 
   const handleDelete = async (id: string) => {
@@ -283,14 +285,56 @@ function ServicesPage() {
             >
               Apply to Category
             </button>
-            <button 
-              onClick={handleApplyKeywordIcon}
-              className="bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-colors flex items-center gap-1"
-              title="Apply icon by keyword search"
-            >
-              <Search size={10} /> Keyword Apply
-            </button>
           </div>
+        </div>
+      </div>
+
+      {/* Bulk-by-keyword: set one icon for every service whose name matches a
+          word, e.g. every "Likes" service across ALL platforms at once. */}
+      <div className="bg-amber-50/50 p-4 rounded-3xl border border-amber-100 flex flex-col md:flex-row gap-3 md:items-center">
+        <div className="flex items-center gap-2 shrink-0">
+          <Search size={14} className="text-amber-600" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">Bulk icon by keyword (any platform)</span>
+        </div>
+        <input
+          type="text"
+          placeholder="Keyword in service name (e.g. Like, View, Share, Follower)"
+          className="flex-1 px-4 py-2.5 bg-white border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-amber-200"
+          value={keywordText}
+          onChange={(e) => setKeywordText(e.target.value)}
+        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Icon name or upload →"
+            className="px-4 py-2.5 bg-white border-none rounded-xl text-xs font-bold w-40 focus:ring-2 focus:ring-amber-200"
+            value={keywordIcon}
+            onChange={(e) => setKeywordIcon(e.target.value)}
+          />
+          <label className="cursor-pointer p-2.5 rounded-xl bg-white text-gray-500 hover:text-amber-600 transition-colors" title="Upload custom icon">
+            {keywordUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) handleKeywordIconUpload(file);
+              }}
+            />
+          </label>
+          {keywordIcon && isImageIcon(keywordIcon) && (
+            <div className="w-9 h-9 rounded-xl border bg-white flex items-center justify-center overflow-hidden shrink-0">
+              <img src={keywordIcon} alt="" className="w-6 h-6 object-contain" />
+            </div>
+          )}
+          <button
+            onClick={handleBulkIconByKeyword}
+            className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-colors whitespace-nowrap"
+          >
+            Apply to All Matches
+          </button>
         </div>
       </div>
 
