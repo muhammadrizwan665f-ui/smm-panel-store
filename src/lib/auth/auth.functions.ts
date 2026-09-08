@@ -169,3 +169,40 @@ export const signOut = createServerFn({ method: "POST" })
   .handler(async () => {
     return { success: true };
   });
+
+/** Public: request a password-reset OTP for a mobile-only account (free,
+ * WhatsApp-relayed alternative to email reset — see admin_view_reset_requests). */
+export const requestMobilePasswordResetOtp = createServerFn({ method: "POST" })
+  .inputValidator((d: any) => z.object({ mobile: z.string().min(5) }).parse(d?.data ?? d))
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+
+    const mobile = data.mobile.replace(/\D/g, '');
+    await supabase.rpc("request_password_reset_otp", { p_mobile: mobile });
+    // Always return success — never reveal whether that number is registered.
+    return { success: true };
+  });
+
+/** Public: complete the reset once the user has the OTP (relayed by an admin via WhatsApp). */
+export const resetMobilePasswordWithOtp = createServerFn({ method: "POST" })
+  .inputValidator((d: any) =>
+    z.object({ mobile: z.string().min(5), otp: z.string().length(6), newPassword: z.string().min(6) }).parse(d?.data ?? d),
+  )
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+
+    const mobile = data.mobile.replace(/\D/g, '');
+    const { data: ok, error } = await supabase.rpc("reset_password_with_otp", {
+      p_mobile: mobile,
+      p_otp: data.otp,
+      p_new_password: data.newPassword,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: !!ok, error: ok ? undefined : "Invalid or expired code" };
+  });

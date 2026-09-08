@@ -124,6 +124,21 @@ export const adminListUsers = createServerFn({ method: "GET" })
 
 /** Admin: read-only snapshot of a user (profile, orders, transactions,
  * referrals) — works without the service-role key, unlike real impersonation. */
+/** Admin: pending mobile password-reset OTPs to relay via WhatsApp. */
+export const adminListPasswordResetRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const supabase = (context as any)?.supabase;
+    const { data, error } = await supabase
+      .from("password_reset_otps")
+      .select("id, mobile_number, otp, used, expires_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return fail(error.message);
+    return ok(data ?? []);
+  });
+
 export const adminViewUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d?.data ?? d))
