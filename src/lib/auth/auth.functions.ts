@@ -170,26 +170,28 @@ export const signOut = createServerFn({ method: "POST" })
     return { success: true };
   });
 
-/** Public: request a password-reset OTP for a mobile-only account (free,
- * WhatsApp-relayed alternative to email reset — see admin_view_reset_requests). */
+/** Public: request a password-reset OTP for any account (mobile or email —
+ * free, fully self-contained alternative to Supabase's native email reset,
+ * which needs Supabase dashboard access to configure redirect URLs). */
 export const requestMobilePasswordResetOtp = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => z.object({ mobile: z.string().min(5) }).parse(d?.data ?? d))
+  .inputValidator((d: any) => z.object({ mobile: z.string().min(3) }).parse(d?.data ?? d))
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
     const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
     const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
     const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
-    const mobile = data.mobile.replace(/\D/g, '');
-    await supabase.rpc("request_password_reset_otp", { p_mobile: mobile });
-    // Always return success — never reveal whether that number is registered.
+    const isEmail = data.mobile.includes('@');
+    const identifier = isEmail ? data.mobile.trim().toLowerCase() : data.mobile.replace(/\D/g, '');
+    await supabase.rpc("request_password_reset_otp", { p_identifier: identifier });
+    // Always return success — never reveal whether that identifier is registered.
     return { success: true };
   });
 
-/** Public: complete the reset once the user has the OTP (relayed by an admin via WhatsApp). */
+/** Public: complete the reset once the user has the OTP (relayed by an admin via WhatsApp/email). */
 export const resetMobilePasswordWithOtp = createServerFn({ method: "POST" })
   .inputValidator((d: any) =>
-    z.object({ mobile: z.string().min(5), otp: z.string().length(6), newPassword: z.string().min(6) }).parse(d?.data ?? d),
+    z.object({ mobile: z.string().min(3), otp: z.string().length(6), newPassword: z.string().min(6) }).parse(d?.data ?? d),
   )
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
@@ -197,9 +199,10 @@ export const resetMobilePasswordWithOtp = createServerFn({ method: "POST" })
     const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
     const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
-    const mobile = data.mobile.replace(/\D/g, '');
+    const isEmail = data.mobile.includes('@');
+    const identifier = isEmail ? data.mobile.trim().toLowerCase() : data.mobile.replace(/\D/g, '');
     const { data: ok, error } = await supabase.rpc("reset_password_with_otp", {
-      p_mobile: mobile,
+      p_identifier: identifier,
       p_otp: data.otp,
       p_new_password: data.newPassword,
     });

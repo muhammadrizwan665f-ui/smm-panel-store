@@ -132,7 +132,7 @@ export const adminListPasswordResetRequests = createServerFn({ method: "GET" })
     const supabase = (context as any)?.supabase;
     const { data, error } = await supabase
       .from("password_reset_otps")
-      .select("id, mobile_number, otp, used, expires_at, created_at")
+      .select("id, mobile_number, identifier, otp, used, expires_at, created_at")
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) return fail(error.message);
