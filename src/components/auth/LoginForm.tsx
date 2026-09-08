@@ -160,7 +160,7 @@ export const LoginForm = () => {
 
         <div className="flex items-center justify-end">
           <Link
-            to="/"
+            to="/forgot-password"
             className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
             Forgot Password?
