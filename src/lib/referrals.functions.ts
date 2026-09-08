@@ -37,12 +37,20 @@ export const getMyReferral = createServerFn({ method: "GET" })
 
     const earnings = (commissions ?? []).reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
 
+    const { data: settingsRow } = await supabaseAdmin
+      .from("site_settings")
+      .select("value")
+      .eq("key", "referral_commission_percent")
+      .maybeSingle();
+    const commissionPercent = parseFloat((settingsRow as any)?.value ?? "10") || 10;
+
     return JSON.stringify({
       code,
       referrals: referrals ?? [],
       commissions: commissions ?? [],
       totalReferrals: (referrals ?? []).length,
       totalEarnings: earnings,
+      commissionPercent,
     });
   });
 
