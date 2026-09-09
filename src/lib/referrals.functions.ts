@@ -118,8 +118,8 @@ export const getReferralSettings = createServerFn({ method: "GET" })
     const map: Record<string, string> = {};
     (rows ?? []).forEach((r: any) => { map[r.key] = r.value; });
     return JSON.stringify({
-      enabled: map.referral_enabled !== "false",
-      percent: parseFloat(map.referral_commission_percent ?? "10"),
+      enabled: map['referral_enabled'] !== "false",
+      percent: parseFloat(map['referral_commission_percent'] ?? "10"),
     });
   });
 

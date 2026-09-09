@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManagementRouteImport } from './routes/management'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -34,6 +35,7 @@ import { Route as ManagementManualOrdersRouteImport } from './routes/management.
 import { Route as ManagementManualServicesRouteImport } from './routes/management.manual-services'
 import { Route as ManagementMappingRouteImport } from './routes/management.mapping'
 import { Route as ManagementOrdersRouteImport } from './routes/management.orders'
+import { Route as ManagementPasswordResetsRouteImport } from './routes/management.password-resets'
 import { Route as ManagementPaymentsRouteImport } from './routes/management.payments'
 import { Route as ManagementProviderServicesRouteImport } from './routes/management.provider-services'
 import { Route as ManagementProvidersRouteImport } from './routes/management.providers'
@@ -67,6 +69,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -188,6 +195,12 @@ const ManagementOrdersRoute = ManagementOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => ManagementRoute,
 } as any)
+const ManagementPasswordResetsRoute =
+  ManagementPasswordResetsRouteImport.update({
+    id: '/password-resets',
+    path: '/password-resets',
+    getParentRoute: () => ManagementRoute,
+  } as any)
 const ManagementPaymentsRoute = ManagementPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -327,6 +340,7 @@ const ApiPublicPaymentsBharatpayCallbackRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/management': typeof ManagementRouteWithChildren
   '/register': typeof RegisterRoute
@@ -349,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/management/manual-services': typeof ManagementManualServicesRoute
   '/management/mapping': typeof ManagementMappingRoute
   '/management/orders': typeof ManagementOrdersRoute
+  '/management/password-resets': typeof ManagementPasswordResetsRoute
   '/management/payments': typeof ManagementPaymentsRoute
   '/management/provider-services': typeof ManagementProviderServicesRoute
   '/management/providers': typeof ManagementProvidersRouteWithChildren
@@ -378,6 +393,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/add-funds': typeof AuthenticatedAddFundsRoute
@@ -399,6 +415,7 @@ export interface FileRoutesByTo {
   '/management/manual-services': typeof ManagementManualServicesRoute
   '/management/mapping': typeof ManagementMappingRoute
   '/management/orders': typeof ManagementOrdersRoute
+  '/management/password-resets': typeof ManagementPasswordResetsRoute
   '/management/payments': typeof ManagementPaymentsRoute
   '/management/provider-services': typeof ManagementProviderServicesRoute
   '/management/referrals': typeof ManagementReferralsRoute
@@ -426,6 +443,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/management': typeof ManagementRouteWithChildren
   '/register': typeof RegisterRoute
@@ -448,6 +466,7 @@ export interface FileRoutesById {
   '/management/manual-services': typeof ManagementManualServicesRoute
   '/management/mapping': typeof ManagementMappingRoute
   '/management/orders': typeof ManagementOrdersRoute
+  '/management/password-resets': typeof ManagementPasswordResetsRoute
   '/management/payments': typeof ManagementPaymentsRoute
   '/management/provider-services': typeof ManagementProviderServicesRoute
   '/management/providers': typeof ManagementProvidersRouteWithChildren
@@ -479,6 +498,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/management'
     | '/register'
@@ -501,6 +521,7 @@ export interface FileRouteTypes {
     | '/management/manual-services'
     | '/management/mapping'
     | '/management/orders'
+    | '/management/password-resets'
     | '/management/payments'
     | '/management/provider-services'
     | '/management/providers'
@@ -530,6 +551,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/register'
     | '/add-funds'
@@ -551,6 +573,7 @@ export interface FileRouteTypes {
     | '/management/manual-services'
     | '/management/mapping'
     | '/management/orders'
+    | '/management/password-resets'
     | '/management/payments'
     | '/management/provider-services'
     | '/management/referrals'
@@ -577,6 +600,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/forgot-password'
     | '/login'
     | '/management'
     | '/register'
@@ -599,6 +623,7 @@ export interface FileRouteTypes {
     | '/management/manual-services'
     | '/management/mapping'
     | '/management/orders'
+    | '/management/password-resets'
     | '/management/payments'
     | '/management/provider-services'
     | '/management/providers'
@@ -630,6 +655,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   ManagementRoute: typeof ManagementRouteWithChildren
   RegisterRoute: typeof RegisterRoute
@@ -651,6 +677,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -812,6 +845,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/management/orders'
       preLoaderRoute: typeof ManagementOrdersRouteImport
+      parentRoute: typeof ManagementRoute
+    }
+    '/management/password-resets': {
+      id: '/management/password-resets'
+      path: '/password-resets'
+      fullPath: '/management/password-resets'
+      preLoaderRoute: typeof ManagementPasswordResetsRouteImport
       parentRoute: typeof ManagementRoute
     }
     '/management/payments': {
@@ -1098,6 +1138,7 @@ interface ManagementRouteChildren {
   ManagementManualServicesRoute: typeof ManagementManualServicesRoute
   ManagementMappingRoute: typeof ManagementMappingRoute
   ManagementOrdersRoute: typeof ManagementOrdersRoute
+  ManagementPasswordResetsRoute: typeof ManagementPasswordResetsRoute
   ManagementPaymentsRoute: typeof ManagementPaymentsRoute
   ManagementProviderServicesRoute: typeof ManagementProviderServicesRoute
   ManagementProvidersRoute: typeof ManagementProvidersRouteWithChildren
@@ -1119,6 +1160,7 @@ const ManagementRouteChildren: ManagementRouteChildren = {
   ManagementManualServicesRoute: ManagementManualServicesRoute,
   ManagementMappingRoute: ManagementMappingRoute,
   ManagementOrdersRoute: ManagementOrdersRoute,
+  ManagementPasswordResetsRoute: ManagementPasswordResetsRoute,
   ManagementPaymentsRoute: ManagementPaymentsRoute,
   ManagementProviderServicesRoute: ManagementProviderServicesRoute,
   ManagementProvidersRoute: ManagementProvidersRouteWithChildren,
@@ -1139,6 +1181,7 @@ const ManagementRouteWithChildren = ManagementRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   ManagementRoute: ManagementRouteWithChildren,
   RegisterRoute: RegisterRoute,

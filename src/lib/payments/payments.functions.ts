@@ -170,8 +170,8 @@ async function payReferralCommissionIfDue(supabaseAdmin: any, depositUserId: str
   const settings: Record<string, string> = {};
   (settingsRows ?? []).forEach((r: any) => { settings[r.key] = r.value; });
 
-  if (settings.referral_enabled !== "true") return;
-  const pct = parseFloat(settings.referral_commission_percent ?? "10");
+  if (settings['referral_enabled'] !== "true") return;
+  const pct = parseFloat(settings['referral_commission_percent'] ?? "10");
   if (!pct || pct <= 0) return;
 
   const { data: depositor } = await supabaseAdmin
