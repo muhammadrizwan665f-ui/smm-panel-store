@@ -443,9 +443,11 @@ function NewOrderPage() {
         <div className="max-w-sm mx-auto space-y-5">
           <div className="glass-white p-4 rounded-2xl border border-white/60">
             <h3 className="text-xs font-black uppercase text-muted-foreground mb-2">Details</h3>
-            <p className="text-sm font-bold text-foreground whitespace-pre-line">
-              {selectedService.description || "Premium subscription delivered manually on WhatsApp."}
-            </p>
+            <div className="max-h-40 overflow-y-auto pr-1">
+              <p className="text-sm font-bold text-foreground whitespace-pre-line leading-relaxed">
+                {selectedService.description || "Premium subscription delivered manually on WhatsApp."}
+              </p>
+            </div>
           </div>
 
           {selectedService.allow_quantity && (
@@ -507,7 +509,11 @@ function NewOrderPage() {
         <div className="max-w-sm mx-auto space-y-5">
           <div className="glass-white p-4 rounded-2xl border border-white/60 mb-4">
             <h3 className="text-xs font-black uppercase text-gray-400 mb-2">Service Info</h3>
-            <p className="text-sm font-bold text-foreground">{selectedService.description || "Premium quality service with fast delivery."}</p>
+            <div className="max-h-40 overflow-y-auto pr-1">
+              <p className="text-sm font-bold text-foreground whitespace-pre-line leading-relaxed">
+                {selectedService.description || "Premium quality service with fast delivery."}
+              </p>
+            </div>
             <div className="flex gap-4 mt-3">
               <div className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">Min: {selectedService.min_quantity}</div>
               <div className="text-[10px] font-black uppercase text-purple-600 bg-purple-50 px-2 py-1 rounded-lg">Max: {selectedService.max_quantity}</div>
