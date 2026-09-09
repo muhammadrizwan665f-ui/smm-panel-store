@@ -162,6 +162,7 @@ export const importServices = createServerFn({ method: "POST" })
             description: ps.description || null,
             provider_id: providerId,
             provider_service_id: String(ps.provider_service_id),
+            provider_type: ps.type || null,
             
             // Audit columns
             provider_currency: providerCurrency,

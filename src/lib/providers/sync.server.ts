@@ -49,10 +49,11 @@ export async function syncOneOrder(order: {
   const { readBranding } = await import("@/lib/settings/branding.server");
   const autoRefundEnabled = (await readBranding()).auto_refund_enabled;
   const shouldRefund = autoRefundEnabled && internalStatus === "failed" && order.status !== "failed";
+  const finalStatus = shouldRefund ? "refunded" : internalStatus;
 
   const { error } = await (supabase as any).rpc("rpc_apply_sync_result", {
     _order_id: order.id,
-    _internal_status: internalStatus,
+    _internal_status: finalStatus,
     _provider_response: statusRes as any,
     _do_refund: shouldRefund,
     _refund_description: shouldRefund
@@ -61,7 +62,7 @@ export async function syncOneOrder(order: {
   });
   if (error) throw new Error(error.message);
 
-  return { status: internalStatus, provider: statusRes };
+  return { status: finalStatus, provider: statusRes };
 }
 
 /** Syncs all pending API orders (optionally only for one user). Server-only. */

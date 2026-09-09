@@ -117,7 +117,7 @@ export const adminCancelRefundOrder = createServerFn({ method: "POST" })
 
     const { error: updErr } = await (supabaseAdmin as any)
       .from("orders")
-      .update({ status: "cancelled" })
+      .update({ status: shouldRefund ? "refunded" : "cancelled" })
       .eq("id", order.id);
     if (updErr) return JSON.stringify({ success: false, message: updErr.message });
 

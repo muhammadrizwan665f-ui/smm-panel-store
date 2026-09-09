@@ -91,6 +91,7 @@ function NewOrderPage() {
   const [selectedService, setSelectedService] = React.useState<any | null>(null);
   const [quantity, setQuantity] = React.useState<number | null>(null);
   const [link, setLink] = React.useState("");
+  const [customComments, setCustomComments] = React.useState("");
   const [currencySettings, setCurrencySettings] = React.useState<any>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [mode, setMode] = React.useState<"api" | "manual">("api");
@@ -192,6 +193,10 @@ function NewOrderPage() {
 
   const handleOrderSubmit = async () => {
     if (!selectedService || !quantity || !link.trim()) return;
+    if (isCustomComments(selectedService) && !customComments.trim()) {
+      toast.error("Please enter your custom comments");
+      return;
+    }
     setSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -221,8 +226,9 @@ function NewOrderPage() {
         link: link.trim(),
         quantity: quantity,
         price: price,
-        status: 'pending'
-      }).select('*').single();
+        status: 'pending',
+        comments: isCustomComments(selectedService) ? customComments.trim() : null,
+      } as any).select('*').single();
 
       if (orderError) {
         console.error("[handleOrderSubmit] Order insertion failed:", orderError);
@@ -265,6 +271,8 @@ function NewOrderPage() {
       setSubmitting(false);
     }
   };
+
+  const isCustomComments = (svc: any) => !!svc?.provider_type && /comment/i.test(svc.provider_type);
 
   const goBack = () => {
     if (selectedService) {
@@ -567,6 +575,22 @@ function NewOrderPage() {
                 className="w-full bg-white border border-primary/30 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
               />
             </div>
+
+            {isCustomComments(selectedService) && (
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-foreground/70 ml-1">Custom Comments (one per line)</label>
+                <textarea
+                  value={customComments}
+                  onChange={(e) => setCustomComments(e.target.value)}
+                  placeholder={"Great post!\nLove this ❤️\nAmazing content"}
+                  rows={5}
+                  className="w-full bg-white border border-primary/30 rounded-xl px-4 py-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/50"
+                />
+                <p className="text-[10px] text-muted-foreground font-bold ml-1">
+                  {customComments.split("\n").filter((l) => l.trim()).length} comment(s) entered — this should match your quantity.
+                </p>
+              </div>
+            )}
 
             <button
               onClick={handleOrderSubmit}

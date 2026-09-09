@@ -4,7 +4,7 @@ import { createServerFn } from "@tanstack/react-start";
 // internal cost/margin fields (provider_cost, provider_rate, markup_amount,
 // profit_value, normalized_usdt_cost, provider ids) are never exposed.
 const PUBLIC_SERVICE_COLUMNS =
-  "id, category_id, name, description, price_per_1000, min_quantity, max_quantity, status, icon, discount_percent, created_at";
+  "id, category_id, name, description, price_per_1000, min_quantity, max_quantity, status, icon, discount_percent, created_at, provider_type";
 
 export const listPublicServices = createServerFn({ method: "GET" }).handler(async () => {
   const { supabase } = await import("@/integrations/supabase/client");

@@ -10,7 +10,9 @@ import {
   AlertCircle,
   ExternalLink,
   ShoppingCart,
-  ArrowRight
+  ArrowRight,
+  Ban,
+  RotateCcw
 } from "lucide-react";
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +69,8 @@ function OrdersPage() {
       case 'pending': return <Clock size={14} className="text-orange-500" />;
       case 'processing': return <RefreshCw size={14} className="text-blue-500 animate-spin-slow" />;
       case 'failed': return <XCircle size={14} className="text-red-500" />;
+      case 'refunded': return <RotateCcw size={14} className="text-purple-500" />;
+      case 'cancelled': return <Ban size={14} className="text-gray-500" />;
       default: return <AlertCircle size={14} className="text-gray-400" />;
     }
   };
@@ -77,6 +81,8 @@ function OrdersPage() {
       case 'pending': return 'bg-orange-50 text-orange-700 border-orange-100';
       case 'processing': return 'bg-blue-50 text-blue-700 border-blue-100';
       case 'failed': return 'bg-red-50 text-red-700 border-red-100';
+      case 'refunded': return 'bg-purple-50 text-purple-700 border-purple-100';
+      case 'cancelled': return 'bg-gray-100 text-gray-700 border-gray-200';
       default: return 'bg-gray-50 text-gray-700 border-gray-100';
     }
   };
@@ -192,6 +198,14 @@ function OrdersPage() {
                         View Link <ExternalLink size={10} />
                       </a>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{order.quantity.toLocaleString()} units</span>
+                      {order.comments && (
+                        <span
+                          className="text-[10px] font-bold text-purple-600 mt-1 truncate max-w-[180px]"
+                          title={order.comments}
+                        >
+                          💬 {order.comments.split("\n").filter((l: string) => l.trim()).length} custom comment(s)
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -222,7 +236,7 @@ function OrdersPage() {
                           <ArrowRight size={14} />
                         </button>
                       ) : null}
-                      {order.status !== 'cancelled' && order.status !== 'completed' ? (
+                      {order.status !== 'cancelled' && order.status !== 'completed' && order.status !== 'refunded' ? (
                         <button
                           onClick={() => cancelAndRefund(order.id)}
                           className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"

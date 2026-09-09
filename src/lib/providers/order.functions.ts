@@ -162,7 +162,8 @@ export const placeProviderOrder = createServerFn({ method: "POST" })
       const response = await adapter.addOrder({
         service: order.provider_service_id,
         link: order.link,
-        quantity: order.quantity
+        quantity: order.quantity,
+        ...(order.comments ? { comments: order.comments } : {}),
       });
 
       console.log(`[placeProviderOrder] Provider API response:`, JSON.stringify(response));
@@ -205,18 +206,25 @@ export const placeProviderOrder = createServerFn({ method: "POST" })
     } catch (err: any) {
       console.error("[placeProviderOrder] Error:", err.message);
 
-      // Refund if balance was deducted but order failed (only if it wasn't a balance error itself)
-      if (err.message !== "Insufficient balance" && !err.message.includes("Balance deduction failed")) {
+      // Respect the same manual/automatic refund setting used everywhere
+      // else — if it's off, the order just sits as "failed" until an admin
+      // explicitly Resends it or clicks Cancel & Refund.
+      const { readBranding } = await import("@/lib/settings/branding.server");
+      const autoRefundEnabled = (await readBranding()).auto_refund_enabled;
+      let didRefund = false;
+
+      if (autoRefundEnabled && err.message !== "Insufficient balance" && !err.message.includes("Balance deduction failed")) {
         await supabase.rpc("rpc_refund_wallet_for_order", {
           _order_id: data.orderId,
           _amount: Number(order.price),
-          _description: `Refund for failed Order #${data.orderId.slice(0, 8)}`,
+          _description: `Auto-refund for failed Order #${data.orderId.slice(0, 8)}`,
         });
+        didRefund = true;
       }
 
       await supabase.rpc("rpc_finalize_order", {
         _order_id: data.orderId,
-        _status: 'failed',
+        _status: didRefund ? 'refunded' : 'failed',
         _provider_order_id: null,
         _provider_cost: null,
         _profit: null,
@@ -283,6 +291,7 @@ export const adminResendOrderToProvider = createServerFn({ method: "POST" })
         service: serviceRow.provider_service_id,
         link: orderRow.link,
         quantity: orderRow.quantity,
+        ...(orderRow.comments ? { comments: orderRow.comments } : {}),
       });
 
       if (!response || (!response.order && !response["order_id"])) {

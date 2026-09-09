@@ -129,9 +129,12 @@ function OrdersPage() {
                 <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                   order.status === 'completed' ? 'bg-green-500/10 text-green-500' :
                   order.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
+                  order.status === 'processing' ? 'bg-blue-500/10 text-blue-500' :
+                  order.status === 'refunded' ? 'bg-purple-500/10 text-purple-500' :
+                  order.status === 'cancelled' ? 'bg-gray-500/10 text-gray-500' :
                   'bg-destructive/10 text-destructive'
                 }`}>
-                  {order.status}
+                  {order.status === 'refunded' ? 'Refunded' : order.status}
                 </div>
               </div>
 
