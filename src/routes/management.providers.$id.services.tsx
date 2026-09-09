@@ -17,7 +17,7 @@ import {
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { importServices } from "@/lib/providers/import.functions";
+import { importServices, syncServiceLimits } from "@/lib/providers/import.functions";
 import { getProviderServices } from "@/lib/providers/provider.functions";
 import { getCurrencySettings } from "@/lib/settings.functions";
 
@@ -31,6 +31,7 @@ function ProviderServices() {
   const [categories, setCategories] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isFetching, setIsFetching] = React.useState(false);
+  const [syncingLimits, setSyncingLimits] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedServices, setSelectedServices] = React.useState<string[]>([]);
   const [currencySettings, setCurrencySettings] = React.useState<any>(null);
@@ -123,6 +124,23 @@ function ProviderServices() {
       setSelectedServices([]);
     } else {
       setSelectedServices(filteredServices.map(s => s.provider_service_id));
+    }
+  };
+
+  const handleSyncLimits = async () => {
+    setSyncingLimits(true);
+    try {
+      const result = await syncServiceLimits({ data: { providerId: id } });
+      const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+      if (parsed.success) {
+        toast.success(parsed.message);
+      } else {
+        toast.error("Sync failed: " + (parsed.message || "Unknown error"));
+      }
+    } catch (error: any) {
+      toast.error("Sync error: " + error.message);
+    } finally {
+      setSyncingLimits(false);
     }
   };
 
@@ -227,6 +245,16 @@ function ProviderServices() {
           >
             {isFetching ? <RefreshCw className="animate-spin" size={16} /> : <RefreshCw size={16} />}
             Fetch Services
+          </button>
+
+          <button
+            onClick={handleSyncLimits}
+            disabled={syncingLimits}
+            title="Refresh min/max order quantity for services already imported, without deactivating them"
+            className="bg-white text-purple-700 border border-purple-100 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center gap-2 hover:bg-purple-50 disabled:opacity-50 transition-all"
+          >
+            {syncingLimits ? <RefreshCw className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+            Sync Min/Max
           </button>
           
           {selectedServices.length > 0 && (

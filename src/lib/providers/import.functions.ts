@@ -206,3 +206,63 @@ export const importServices = createServerFn({ method: "POST" })
       errors: errors.length > 0 ? errors.slice(0, 5) : undefined
     });
   });
+
+/**
+ * Refreshes min/max order quantity (and provider cost/type) for services
+ * that are ALREADY imported, pulling the latest values from the
+ * provider_services cache — without touching status/price/category, so
+ * live active services never get silently deactivated just to pick up an
+ * updated provider minimum.
+ */
+export const syncServiceLimits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => d as { providerId: string })
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+    const { providerId } = data;
+
+    const { data: services, error: svcError } = await supabaseAdmin
+      .from('services')
+      .select('id, provider_service_id')
+      .eq('provider_id', providerId);
+    if (svcError) throw new Error(svcError.message);
+    if (!services || services.length === 0) {
+      return JSON.stringify({ success: true, updatedCount: 0, message: "No imported services for this provider." });
+    }
+
+    const { data: providerServices, error: psError } = await supabaseAdmin
+      .from('provider_services')
+      .select('provider_service_id, provider_min, provider_max, type, provider_cost')
+      .eq('provider_id', providerId);
+    if (psError) throw new Error(psError.message);
+
+    const byPsid = new Map<string, any>();
+    (providerServices || []).forEach((p: any) => byPsid.set(String(p.provider_service_id), p));
+
+    let updatedCount = 0;
+    const errors: string[] = [];
+    for (const svc of services) {
+      const match = byPsid.get(String(svc.provider_service_id));
+      if (!match) continue;
+      const { error } = await supabaseAdmin
+        .from('services')
+        .update({
+          min_quantity: match.provider_min || 1,
+          max_quantity: match.provider_max || 9999999,
+          provider_type: match.type || null,
+          provider_rate: match.provider_cost,
+          last_synced_at: new Date().toISOString(),
+        })
+        .eq('id', svc.id);
+      if (error) errors.push(`${svc.id}: ${error.message}`);
+      else updatedCount++;
+    }
+
+    return JSON.stringify({
+      success: true,
+      updatedCount,
+      totalChecked: services.length,
+      message: `Refreshed min/max for ${updatedCount} of ${services.length} imported services.`,
+      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+    });
+  });
