@@ -23,7 +23,8 @@ BEGIN
     SELECT o.id, o.status, o.provider_order_id, o.price, o.user_id,
            p.api_url, p.api_key, p.api_version
     FROM public.orders o
-    LEFT JOIN public.providers p ON p.id = o.provider_id
+    LEFT JOIN public.services s ON s.id = o.service_id
+    LEFT JOIN public.providers p ON p.id = COALESCE(s.provider_id, o.provider_id)
     WHERE o.status NOT IN ('completed', 'failed', 'cancelled', 'refunded')
       AND o.provider_order_id IS NOT NULL
       AND (_user_id IS NULL OR o.user_id = _user_id)

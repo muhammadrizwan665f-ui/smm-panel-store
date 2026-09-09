@@ -50,7 +50,7 @@ export async function readBranding(): Promise<BrandingSettings> {
     whatsapp_number: map["whatsapp_number"] ?? "",
     whatsapp_group_url: map["whatsapp_group_url"] ?? "",
     support_email: map["support_email"] ?? "",
-    auto_refund_enabled: (map["auto_refund_enabled"] ?? "true") !== "false",
+    auto_refund_enabled: (map["auto_refund_enabled"] ?? "false") !== "false",
     theme: map["theme"] || BRANDING_DEFAULTS.theme,
   };
 }

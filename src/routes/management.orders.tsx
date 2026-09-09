@@ -96,18 +96,15 @@ function OrdersPage() {
 
   const retryOrder = async (orderId: string) => {
     try {
-      const { placeProviderOrder } = await import("@/lib/providers/order.functions");
-      toast.info("Retrying order submission...");
-      const resJson = await placeProviderOrder({ data: { orderId } });
+      const { adminResendOrderToProvider } = await import("@/lib/providers/order.functions");
+      toast.info("Resending order to provider (customer's wallet is NOT charged again)...");
+      const resJson = await adminResendOrderToProvider({ data: { orderId } });
       const res = JSON.parse(resJson);
-      if (res.order) {
-        toast.success(`Success! Provider ID: ${res.order}`);
-      } else {
-        toast.success("Order submitted to provider.");
-      }
+      if (!res.success) throw new Error(res.message);
+      toast.success(`Success! Provider ID: ${res.providerOrderId}`);
       fetchOrders();
     } catch (error: any) {
-      toast.error("Retry failed: " + (error?.message || "Unknown error"));
+      toast.error("Resend failed: " + (error?.message || "Unknown error"));
     }
   };
 
@@ -220,7 +217,7 @@ function OrdersPage() {
                         <button 
                           onClick={() => retryOrder(order.id)}
                           className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors"
-                          title="Retry Provider Submission"
+                          title="Resend to Provider (does not charge wallet again)"
                         >
                           <ArrowRight size={14} />
                         </button>

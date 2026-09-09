@@ -247,3 +247,84 @@ export const syncOrderStatusInternal = createServerFn({ method: "POST" })
     const res = await syncOneOrder(order);
     return JSON.stringify(res.provider);
   });
+
+/**
+ * Admin-only: re-submits a FAILED order to its provider WITHOUT touching the
+ * customer's wallet at all — no new debit, no refund. The customer already
+ * paid once when the order was first placed; this just gives the order a
+ * second attempt on that same payment, so the business never pays twice or
+ * refunds without cause.
+ */
+export const adminResendOrderToProvider = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => d as { orderId: string })
+  .handler(async ({ data, context }) => {
+    const supabase = (context as any)?.supabase;
+
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: (context as any).userId, _role: "admin" });
+    if (!isAdmin) return JSON.stringify({ success: false, message: "Admin access required" });
+
+    const { data: ctx, error: ctxError } = await supabase.rpc("rpc_get_order_context", { _order_id: data.orderId });
+    if (ctxError || !ctx) return JSON.stringify({ success: false, message: ctxError?.message || "Order not found" });
+
+    const orderRow = ctx.order;
+    const serviceRow = ctx.service;
+    const providerRow = ctx.provider;
+    const providerId = serviceRow?.provider_id || orderRow.provider_id;
+
+    if (!providerRow?.api_url || !providerRow?.api_key || !serviceRow?.provider_service_id) {
+      return JSON.stringify({ success: false, message: "Provider configuration missing for this order" });
+    }
+
+    const adapter = ProviderAdapterFactory.getAdapter(providerRow.api_version || "v2", providerRow.api_url, providerRow.api_key);
+
+    try {
+      const response = await adapter.addOrder({
+        service: serviceRow.provider_service_id,
+        link: orderRow.link,
+        quantity: orderRow.quantity,
+      });
+
+      if (!response || (!response.order && !response["order_id"])) {
+        throw new Error("Provider returned no order ID. Response: " + JSON.stringify(response));
+      }
+      const providerOrderId = (response.order || response["order_id"]).toString();
+
+      await supabase.rpc("rpc_finalize_order", {
+        _order_id: data.orderId,
+        _status: "processing",
+        _provider_order_id: providerOrderId,
+        _provider_cost: null,
+        _profit: null,
+        _provider_response: response,
+      });
+      await supabase.rpc("rpc_log_provider_api", {
+        _provider_id: providerId,
+        _operation: "resend_success",
+        _request: { service: serviceRow.provider_service_id, link: orderRow.link, quantity: orderRow.quantity },
+        _response: response,
+        _status_code: 200,
+        _is_success: true,
+      });
+
+      return JSON.stringify({ success: true, providerOrderId });
+    } catch (err: any) {
+      await supabase.rpc("rpc_finalize_order", {
+        _order_id: data.orderId,
+        _status: "failed",
+        _provider_order_id: null,
+        _provider_cost: null,
+        _profit: null,
+        _provider_response: { error: err.message },
+      });
+      await supabase.rpc("rpc_log_provider_api", {
+        _provider_id: providerId,
+        _operation: "resend_failed",
+        _request: null,
+        _response: { error: err.message },
+        _status_code: 500,
+        _is_success: false,
+      });
+      return JSON.stringify({ success: false, message: err.message });
+    }
+  });
