@@ -54,7 +54,8 @@ function ReferPage() {
         commissions: any[];
         totalReferrals: number;
         totalEarnings: number;
-      }>(await getMyReferral(), { code: "", referrals: [], commissions: [], totalReferrals: 0, totalEarnings: 0 }),
+        commissionPercent: number;
+      }>(await getMyReferral(), { code: "", referrals: [], commissions: [], totalReferrals: 0, totalEarnings: 0, commissionPercent: 10 }),
   });
 
   const { data: currency } = useQuery({
@@ -65,6 +66,7 @@ function ReferPage() {
   const symbol = currency?.currency_symbol || "Rs.";
   const code = data?.code || "";
   const link = code && origin ? `${origin}/register?ref=${code}` : "";
+  const pct = data?.commissionPercent ?? 10;
 
   const copy = async () => {
     if (!link) return;
@@ -103,7 +105,7 @@ function ReferPage() {
         </div>
         <h2 className="text-3xl font-black tracking-tight">Refer &amp; Earn Money</h2>
         <p className="mt-1 text-sm font-bold text-white/85">
-          Earn <span className="bg-white/20 px-2 py-0.5 rounded-md">3%</span> Commission
+          Earn <span className="bg-white/20 px-2 py-0.5 rounded-md">{pct}%</span> Commission
         </p>
       </div>
 
@@ -165,7 +167,7 @@ function ReferPage() {
         {[
           { t: "Share Your Link", d: "Send your unique referral link to friends via WhatsApp or any platform." },
           { t: "Friends Sign Up", d: "When they register using your link, they become your referral." },
-          { t: "Earn 3% Forever", d: "Every time they add funds, you earn 3% commission. Lifetime!" },
+          { t: `Earn ${pct}% Forever`, d: `Every time they add funds, you earn ${pct}% commission. Lifetime!` },
         ].map((s, i) => (
           <div key={s.t} className="flex items-start gap-4">
             <div className="w-8 h-8 shrink-0 rounded-full bg-emerald-800 text-white flex items-center justify-center text-sm font-black">

@@ -9,6 +9,14 @@ function fail(message: string) {
   return JSON.stringify({ success: false, message, data: [] });
 }
 
+async function assertAdmin(context: any) {
+  const { data: isAdmin } = await context.supabase.rpc("has_role", {
+    _user_id: String(context.userId),
+    _role: "admin",
+  });
+  if (!isAdmin) throw new Error("Forbidden");
+}
+
 export const adminGetProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => d as { id: string })
@@ -96,50 +104,71 @@ export const adminDeleteCategory = createServerFn({ method: "POST" })
 export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertAdmin(context);
     const supabaseAdmin = (context as any)?.supabase;
-    
-    // 1. Fetch profiles
+
+    // Email now lives directly on profiles (captured at signup via
+    // complete_my_profile — see migration 20260908010000) so this no longer
+    // needs auth.admin.listUsers(), which requires the service-role key.
+    // Note: users who registered before this fix will show a blank email
+    // until they next log in (their profile row predates this column).
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, mobile_number, wallet_balance, status, created_at")
+      .select("id, mobile_number, email, wallet_balance, status, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
-      
+
     if (profileError) return fail(profileError.message);
-    if (!profiles) return ok([]);
+    return ok(profiles ?? []);
+  });
 
-    // 2. Fetch auth user emails using service role
-    const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    const emailMap: Record<string, string> = {};
-    if (!authError && authUsers?.users) {
-      authUsers.users.forEach((u: any) => {
-        if (u.email) emailMap[u.id] = u.email;
-      });
-    }
+/** Admin: read-only snapshot of a user (profile, orders, transactions,
+ * referrals) — works without the service-role key, unlike real impersonation. */
+/** Admin: pending mobile password-reset OTPs to relay via WhatsApp. */
+export const adminListPasswordResetRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const supabase = (context as any)?.supabase;
+    const { data, error } = await supabase
+      .from("password_reset_otps")
+      .select("id, mobile_number, identifier, otp, used, expires_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return fail(error.message);
+    return ok(data ?? []);
+  });
 
-    // 3. Merge
-    const merged = profiles.map((p: any) => ({
-      ...p,
-      email: emailMap[p.id] || null
-    }));
-
-    return ok(merged);
+export const adminViewUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d?.data ?? d))
+  .handler(async ({ data, context }) => {
+    const supabase = (context as any)?.supabase;
+    const { data: result, error } = await supabase.rpc("admin_view_user", { p_user_id: data.userId });
+    if (error) return fail(error.message);
+    return ok(result);
   });
 
 export const adminImpersonateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: any) => z.object({ userId: z.string() }).parse(d))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = (context as any)?.supabase;
-    
+    await assertAdmin(context);
+
+    // auth.admin.getUserById / generateLink are privileged Supabase Auth API
+    // calls — they require the real service-role client. The regular
+    // (anon-key) client used everywhere else always returned an error here,
+    // which is why this previously failed with "User not found" for every
+    // user, real or not.
+    const { supabaseAdmin: serviceClient } = await import("@/integrations/supabase/client.server");
+
     // Safety check: is the targeted user a real user?
-    const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const { data: user, error: userError } = await serviceClient.auth.admin.getUserById(data.userId);
     if (userError || !user?.user) return fail("User not found");
 
     // Generate a magic link / recovery link that we can extract tokens from
     // or just generate a login link. generateLink is the most flexible.
-    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
       type: 'magiclink',
       email: user.user.email!,
     });

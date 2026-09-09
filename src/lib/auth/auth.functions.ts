@@ -74,7 +74,6 @@ export const signUp = createServerFn({ method: "POST" })
 export const completeProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const userId = context.userId;
 
     if (!userId) {
@@ -83,37 +82,32 @@ export const completeProfile = createServerFn({ method: "POST" })
     }
 
     try {
-      // Bypassing any User object that might trigger the seroval-plugin-supabase error
-      const { data: userRows, error: userError } = await supabaseAdmin
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .single();
-      
-      // We check if it exists or create it
-      const { data: { user }, error: authUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
-      
-      if (authUserError || !user) {
-         return { success: false, error: "Auth user not found" };
+      // Uses the already-validated JWT claims from auth middleware — no
+      // fresh privileged lookup needed, since this data is already on the
+      // user's own token. Writes go through a SECURITY DEFINER RPC
+      // (complete_my_profile) rather than the service-role client, so
+      // signup no longer depends on SUPABASE_SERVICE_ROLE_KEY being
+      // configured at all.
+      const user = (context as any).claims;
+      if (!user) {
+        return { success: false, error: "Auth user not found" };
       }
 
       const userMetadata = (user.user_metadata || {}) as any;
       const mobileNumber = userMetadata['mobile_number'] || user.email?.split('@')[0];
+      // Only store a real email (not the synthetic "xxxxx@mobile.panel"
+      // placeholder used for mobile-only signups).
+      const realEmail = user.email && !user.email.endsWith('@mobile.panel') ? user.email : null;
 
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .upsert({
-          id: userId,
-          mobile_number: mobileNumber,
-          wallet_balance: 0
-        }, { onConflict: 'id' });
-
-      const { error: roleError } = await supabaseAdmin
-        .from('user_roles')
-        .upsert({
-          user_id: userId,
-          role: 'user' as any
-        }, { onConflict: 'user_id, role' });
+      const supabase = (context as any).supabase;
+      const { error } = await supabase.rpc("complete_my_profile", {
+        p_mobile_number: mobileNumber,
+        p_email: realEmail,
+      });
+      if (error) {
+        console.error("completeProfile RPC error:", error.message);
+        return { success: false, error: error.message };
+      }
 
       return { success: true };
     } catch (e: any) {
@@ -174,4 +168,44 @@ export const signIn = createServerFn({ method: "POST" })
 export const signOut = createServerFn({ method: "POST" })
   .handler(async () => {
     return { success: true };
+  });
+
+/** Public: request a password-reset OTP for any account (mobile or email —
+ * free, fully self-contained alternative to Supabase's native email reset,
+ * which needs Supabase dashboard access to configure redirect URLs). */
+export const requestMobilePasswordResetOtp = createServerFn({ method: "POST" })
+  .inputValidator((d: any) => z.object({ mobile: z.string().min(3) }).parse(d?.data ?? d))
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+
+    const isEmail = data.mobile.includes('@');
+    const identifier = isEmail ? data.mobile.trim().toLowerCase() : data.mobile.replace(/\D/g, '');
+    await supabase.rpc("request_password_reset_otp", { p_identifier: identifier });
+    // Always return success — never reveal whether that identifier is registered.
+    return { success: true };
+  });
+
+/** Public: complete the reset once the user has the OTP (relayed by an admin via WhatsApp/email). */
+export const resetMobilePasswordWithOtp = createServerFn({ method: "POST" })
+  .inputValidator((d: any) =>
+    z.object({ mobile: z.string().min(3), otp: z.string().length(6), newPassword: z.string().min(6) }).parse(d?.data ?? d),
+  )
+  .handler(async ({ data }) => {
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+
+    const isEmail = data.mobile.includes('@');
+    const identifier = isEmail ? data.mobile.trim().toLowerCase() : data.mobile.replace(/\D/g, '');
+    const { data: ok, error } = await supabase.rpc("reset_password_with_otp", {
+      p_identifier: identifier,
+      p_otp: data.otp,
+      p_new_password: data.newPassword,
+    });
+    if (error) return { success: false, error: error.message };
+    return { success: !!ok, error: ok ? undefined : "Invalid or expired code" };
   });

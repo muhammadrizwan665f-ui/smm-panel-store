@@ -156,7 +156,10 @@ export const importServices = createServerFn({ method: "POST" })
             customer_rate: customerPrice,
             min_quantity: ps.provider_min || 1,
             max_quantity: ps.provider_max || 9999999,
-            description: ps.category ? `${ps.category} — provider service #${ps.provider_service_id}` : null,
+            // Use the provider's real description when we actually have one
+            // (see sync fix above) — never show the raw provider service ID
+            // to customers as a fallback; leave it blank instead.
+            description: ps.description || null,
             provider_id: providerId,
             provider_service_id: String(ps.provider_service_id),
             

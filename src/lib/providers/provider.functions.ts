@@ -259,6 +259,12 @@ export const getProviderServices = createServerFn({ method: "POST" })
           provider_service_id: String(providerServiceId),
           name: String(s.name ?? s.service_name ?? `Service ${providerServiceId}`),
           category: String(s.category ?? s.category_name ?? 'Uncategorized'),
+          // Most SMM-panel-style provider APIs return the real service
+          // description as "desc" (some use "description") — this was never
+          // being captured at all before, so every imported service ended
+          // up with no real description, and the import step fell back to
+          // a placeholder showing the raw provider service ID to customers.
+          description: s.desc ?? s.description ?? null,
           type: s.type ? String(s.type) : 'default',
           provider_cost: isNaN(rate) ? 0 : rate,
           provider_min: isNaN(min) ? 0 : min,

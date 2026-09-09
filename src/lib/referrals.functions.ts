@@ -17,9 +17,8 @@ export const getMyReferral = createServerFn({ method: "GET" })
 
     let code = (profile as any)?.referral_code as string | null | undefined;
     if (!code) {
-      const generated = `REF-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
-      await supabaseAdmin.from("profiles").update({ referral_code: generated } as any).eq("id", userId);
-      code = generated;
+      const { data: generated } = await supabaseAdmin.rpc("ensure_referral_code");
+      code = generated as string;
     }
 
     const { data: referrals } = await supabaseAdmin
@@ -38,12 +37,20 @@ export const getMyReferral = createServerFn({ method: "GET" })
 
     const earnings = (commissions ?? []).reduce((s: number, c: any) => s + Number(c.amount || 0), 0);
 
+    const { data: settingsRow } = await supabaseAdmin
+      .from("site_settings")
+      .select("value")
+      .eq("key", "referral_commission_percent")
+      .maybeSingle();
+    const commissionPercent = parseFloat((settingsRow as any)?.value ?? "10") || 10;
+
     return JSON.stringify({
       code,
       referrals: referrals ?? [],
       commissions: commissions ?? [],
       totalReferrals: (referrals ?? []).length,
       totalEarnings: earnings,
+      commissionPercent,
     });
   });
 
@@ -97,6 +104,43 @@ export const adminListReferrals = createServerFn({ method: "GET" })
         })),
       },
     });
+  });
+
+/** Admin: read/update the referral program's on/off + commission % settings. */
+export const getReferralSettings = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+    const { data: rows } = await supabaseAdmin
+      .from("site_settings")
+      .select("key, value")
+      .in("key", ["referral_enabled", "referral_commission_percent"]);
+    const map: Record<string, string> = {};
+    (rows ?? []).forEach((r: any) => { map[r.key] = r.value; });
+    return JSON.stringify({
+      enabled: map.referral_enabled !== "false",
+      percent: parseFloat(map.referral_commission_percent ?? "10"),
+    });
+  });
+
+export const updateReferralSettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) =>
+    z.object({ enabled: z.boolean(), percent: z.number().min(0).max(100) }).parse(d?.data ?? d),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) return JSON.stringify({ success: false, message: "Forbidden" });
+
+    const supabaseAdmin = (context as any)?.supabase;
+    await supabaseAdmin.from("site_settings").upsert([
+      { key: "referral_enabled", value: data.enabled ? "true" : "false" },
+      { key: "referral_commission_percent", value: String(data.percent) },
+    ]);
+    return JSON.stringify({ success: true });
   });
 
 /** Admin: pay a manual commission (credits the referrer's wallet). */
@@ -156,22 +200,12 @@ export const attachReferral = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ code: z.string().min(3).max(40) }).parse(d?.data ?? d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = (context as any)?.supabase;
-    const userId = context.userId as string;
 
-    const { data: me } = await supabaseAdmin
-      .from("profiles")
-      .select("id, referred_by")
-      .eq("id", userId)
-      .maybeSingle();
-    if (!me || (me as any).referred_by) return JSON.stringify({ success: false });
-
-    const { data: referrer } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .eq("referral_code" as any, data.code.trim().toUpperCase())
-      .maybeSingle();
-    if (!referrer || referrer.id === userId) return JSON.stringify({ success: false });
-
-    await supabaseAdmin.from("profiles").update({ referred_by: referrer.id } as any).eq("id", userId);
-    return JSON.stringify({ success: true });
+    // Runs as a SECURITY DEFINER RPC (see migration 20260908000000) — the
+    // previous direct `.from("profiles").update(...)` was silently blocked
+    // by RLS for every non-admin user, since profiles never had a
+    // self-UPDATE policy, and the code never even checked for an error.
+    const { data: attached, error } = await supabaseAdmin.rpc("attach_referral_code", { p_code: data.code });
+    if (error) return JSON.stringify({ success: false, message: error.message });
+    return JSON.stringify({ success: !!attached });
   });

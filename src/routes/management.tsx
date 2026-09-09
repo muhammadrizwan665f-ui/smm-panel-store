@@ -19,7 +19,8 @@ import {
   Wallet,
   Database,
   PlusCircle,
-  ShieldCheck
+  ShieldCheck,
+  KeyRound
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { AdminErrorBoundary } from "@/components/admin/AdminErrorBoundary";
@@ -136,6 +137,7 @@ export default function ManagementLayout() {
     { label: "Transactions", to: "/management/transactions", icon: History },
     { label: "Payments", to: "/management/payments", icon: CreditCard },
     { label: "Referrals", to: "/management/referrals", icon: Users },
+    { label: "Password Resets", to: "/management/password-resets", icon: KeyRound },
 
     { label: "API Logs", to: "/management/api-logs", icon: ShieldCheck },
     { label: "Reports", to: "/management/reports", icon: BarChart3 },

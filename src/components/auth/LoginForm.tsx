@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Phone, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearch, useRouter } from "@tanstack/react-router";
-import { signIn } from "@/lib/auth/auth.functions";
+import { signIn, completeProfile } from "@/lib/auth/auth.functions";
 import { establishClientSession } from "@/lib/auth/client-session";
 
 const loginSchema = z.object({
@@ -64,6 +64,16 @@ export const LoginForm = () => {
       }
 
       console.log("SUPABASE_SIGNIN_SUCCESS", { user: result.user?.id });
+
+      // Self-healing: backfills email (and mobile_number/role if somehow
+      // missing) on the profile row for accounts created before this was
+      // tracked. Safe to call every login — it's idempotent and doesn't
+      // overwrite existing values with blanks.
+      try {
+        await completeProfile();
+      } catch (syncErr) {
+        console.warn("completeProfile sync on login failed (non-blocking)", syncErr);
+      }
 
       const redirectTo = (search as any)?.redirect || (isManagement ? "/management" : "/dashboard");
       console.log("REDIRECTING_TO:", redirectTo);
@@ -150,7 +160,7 @@ export const LoginForm = () => {
 
         <div className="flex items-center justify-end">
           <Link
-            to="/"
+            to="/forgot-password"
             className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
             Forgot Password?
