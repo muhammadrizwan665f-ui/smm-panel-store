@@ -22,7 +22,8 @@ import {
   Construction,
   MessageSquare,
   Smartphone,
-  ShieldCheck
+  ShieldCheck,
+  BookOpen
 } from "lucide-react";
 import React from "react";
 import { signOut } from "@/lib/auth/auth.functions";
@@ -217,6 +218,7 @@ function AuthenticatedLayout() {
                 { label: "Add Funds", to: "/add-funds", icon: Wallet },
                 { label: "Balance History", to: "/balance-history", icon: ShoppingBag },
                 { label: "Support", labelDesktop: "WhatsApp Support", to: "/support", icon: MessageSquare },
+                { label: "Blog", to: "/blog", icon: BookOpen },
                 { label: "Refer and earn", to: "/refer", icon: ArrowRight, color: "bg-green-100 text-green-800 border-green-200", badge: true },
                 { label: "Install App", to: "/install-app", icon: Smartphone },
               ].map((item) => (

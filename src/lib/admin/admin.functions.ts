@@ -428,4 +428,71 @@ export const adminAdjustWallet = createServerFn({ method: "POST" })
     return ok({ newBalance });
   });
 
+export const adminListBlogPosts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+    const { data, error } = await supabaseAdmin
+      .from("blog_posts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) return fail(error.message);
+    return ok(data ?? []);
+  });
+
+function slugify(title: string) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export const adminSaveBlogPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => d as {
+    id?: string;
+    title: string;
+    slug?: string;
+    excerpt?: string;
+    content: string;
+    cover_image_url?: string | null;
+    status: "draft" | "published";
+    author_name?: string;
+  })
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+    const slug = data.slug?.trim() ? slugify(data.slug) : slugify(data.title);
+
+    const payload: any = {
+      title: data.title,
+      slug,
+      excerpt: data.excerpt ?? null,
+      content: data.content,
+      cover_image_url: data.cover_image_url ?? null,
+      status: data.status,
+      author_name: data.author_name ?? null,
+    };
+    if (data.status === "published") {
+      payload.published_at = new Date().toISOString();
+    }
+
+    const { error } = data.id
+      ? await supabaseAdmin.from("blog_posts").update(payload).eq("id", data.id)
+      : await supabaseAdmin.from("blog_posts").insert(payload);
+
+    if (error) return fail(error.message);
+    return ok(true);
+  });
+
+export const adminDeleteBlogPost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => d as { id: string })
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+    const { error } = await supabaseAdmin.from("blog_posts").delete().eq("id", data.id);
+    if (error) return fail(error.message);
+    return ok(true);
+  });
+
 

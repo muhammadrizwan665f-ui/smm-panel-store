@@ -20,7 +20,8 @@ import {
   Database,
   PlusCircle,
   ShieldCheck,
-  KeyRound
+  KeyRound,
+  FileText,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { AdminErrorBoundary } from "@/components/admin/AdminErrorBoundary";
@@ -128,6 +129,7 @@ export default function ManagementLayout() {
     { label: "Orders", to: "/management/orders", icon: ShoppingCart },
     { label: "Services", to: "/management/services", icon: Package },
     { label: "Categories", to: "/management/categories", icon: Layers },
+    { label: "Blog", to: "/management/blog", icon: FileText },
     { label: "Manual Products", to: "/management/manual-services", icon: Package },
     { label: "Manual Orders", to: "/management/manual-orders", icon: ShoppingCart },
     { label: "Providers", to: "/management/providers", icon: Database },

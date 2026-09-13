@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as BlogRouteImport } from './routes/blog'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManagementRouteImport } from './routes/management'
@@ -27,8 +28,10 @@ import { Route as AuthenticatedReferRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedServicesRouteImport } from './routes/_authenticated.services'
 import { Route as AuthenticatedSupportRouteImport } from './routes/_authenticated.support'
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated.transactions'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as ManagementIndexRouteImport } from './routes/management.index'
 import { Route as ManagementApiLogsRouteImport } from './routes/management.api-logs'
+import { Route as ManagementBlogRouteImport } from './routes/management.blog'
 import { Route as ManagementCategoriesRouteImport } from './routes/management.categories'
 import { Route as ManagementLoginRouteImport } from './routes/management.login'
 import { Route as ManagementManualOrdersRouteImport } from './routes/management.manual-orders'
@@ -69,6 +72,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -154,6 +162,11 @@ const AuthenticatedTransactionsRoute =
     path: '/transactions',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => BlogRoute,
+} as any)
 const ManagementIndexRoute = ManagementIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -162,6 +175,11 @@ const ManagementIndexRoute = ManagementIndexRouteImport.update({
 const ManagementApiLogsRoute = ManagementApiLogsRouteImport.update({
   id: '/api-logs',
   path: '/api-logs',
+  getParentRoute: () => ManagementRoute,
+} as any)
+const ManagementBlogRoute = ManagementBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => ManagementRoute,
 } as any)
 const ManagementCategoriesRoute = ManagementCategoriesRouteImport.update({
@@ -340,6 +358,7 @@ const ApiPublicPaymentsBharatpayCallbackRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/blog': typeof BlogRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/management': typeof ManagementRouteWithChildren
@@ -356,7 +375,9 @@ export interface FileRoutesByFullPath {
   '/services': typeof AuthenticatedServicesRoute
   '/support': typeof AuthenticatedSupportRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/management/api-logs': typeof ManagementApiLogsRoute
+  '/management/blog': typeof ManagementBlogRoute
   '/management/categories': typeof ManagementCategoriesRoute
   '/management/login': typeof ManagementLoginRoute
   '/management/manual-orders': typeof ManagementManualOrdersRoute
@@ -393,6 +414,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/blog': typeof BlogRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -408,7 +430,9 @@ export interface FileRoutesByTo {
   '/services': typeof AuthenticatedServicesRoute
   '/support': typeof AuthenticatedSupportRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/management/api-logs': typeof ManagementApiLogsRoute
+  '/management/blog': typeof ManagementBlogRoute
   '/management/categories': typeof ManagementCategoriesRoute
   '/management/login': typeof ManagementLoginRoute
   '/management/manual-orders': typeof ManagementManualOrdersRoute
@@ -443,6 +467,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/blog': typeof BlogRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/management': typeof ManagementRouteWithChildren
@@ -459,7 +484,9 @@ export interface FileRoutesById {
   '/_authenticated/services': typeof AuthenticatedServicesRoute
   '/_authenticated/support': typeof AuthenticatedSupportRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/management/api-logs': typeof ManagementApiLogsRoute
+  '/management/blog': typeof ManagementBlogRoute
   '/management/categories': typeof ManagementCategoriesRoute
   '/management/login': typeof ManagementLoginRoute
   '/management/manual-orders': typeof ManagementManualOrdersRoute
@@ -498,6 +525,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/blog'
     | '/forgot-password'
     | '/login'
     | '/management'
@@ -514,7 +542,9 @@ export interface FileRouteTypes {
     | '/services'
     | '/support'
     | '/transactions'
+    | '/blog/$slug'
     | '/management/api-logs'
+    | '/management/blog'
     | '/management/categories'
     | '/management/login'
     | '/management/manual-orders'
@@ -551,6 +581,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/blog'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -566,7 +597,9 @@ export interface FileRouteTypes {
     | '/services'
     | '/support'
     | '/transactions'
+    | '/blog/$slug'
     | '/management/api-logs'
+    | '/management/blog'
     | '/management/categories'
     | '/management/login'
     | '/management/manual-orders'
@@ -600,6 +633,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/blog'
     | '/forgot-password'
     | '/login'
     | '/management'
@@ -616,7 +650,9 @@ export interface FileRouteTypes {
     | '/_authenticated/services'
     | '/_authenticated/support'
     | '/_authenticated/transactions'
+    | '/blog/$slug'
     | '/management/api-logs'
+    | '/management/blog'
     | '/management/categories'
     | '/management/login'
     | '/management/manual-orders'
@@ -655,6 +691,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  BlogRoute: typeof BlogRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   ManagementRoute: typeof ManagementRouteWithChildren
@@ -677,6 +714,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -791,6 +835,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransactionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/management/': {
       id: '/management/'
       path: '/'
@@ -803,6 +854,13 @@ declare module '@tanstack/react-router' {
       path: '/api-logs'
       fullPath: '/management/api-logs'
       preLoaderRoute: typeof ManagementApiLogsRouteImport
+      parentRoute: typeof ManagementRoute
+    }
+    '/management/blog': {
+      id: '/management/blog'
+      path: '/blog'
+      fullPath: '/management/blog'
+      preLoaderRoute: typeof ManagementBlogRouteImport
       parentRoute: typeof ManagementRoute
     }
     '/management/categories': {
@@ -1068,6 +1126,16 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface BlogRouteChildren {
+  BlogSlugRoute: typeof BlogSlugRoute
+}
+
+const BlogRouteChildren: BlogRouteChildren = {
+  BlogSlugRoute: BlogSlugRoute,
+}
+
+const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
+
 interface ManagementProvidersIdRouteChildren {
   ManagementProvidersIdLogsRoute: typeof ManagementProvidersIdLogsRoute
   ManagementProvidersIdServicesRoute: typeof ManagementProvidersIdServicesRoute
@@ -1132,6 +1200,7 @@ const ManagementSettingsRouteWithChildren =
 
 interface ManagementRouteChildren {
   ManagementApiLogsRoute: typeof ManagementApiLogsRoute
+  ManagementBlogRoute: typeof ManagementBlogRoute
   ManagementCategoriesRoute: typeof ManagementCategoriesRoute
   ManagementLoginRoute: typeof ManagementLoginRoute
   ManagementManualOrdersRoute: typeof ManagementManualOrdersRoute
@@ -1154,6 +1223,7 @@ interface ManagementRouteChildren {
 
 const ManagementRouteChildren: ManagementRouteChildren = {
   ManagementApiLogsRoute: ManagementApiLogsRoute,
+  ManagementBlogRoute: ManagementBlogRoute,
   ManagementCategoriesRoute: ManagementCategoriesRoute,
   ManagementLoginRoute: ManagementLoginRoute,
   ManagementManualOrdersRoute: ManagementManualOrdersRoute,
@@ -1181,6 +1251,7 @@ const ManagementRouteWithChildren = ManagementRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  BlogRoute: BlogRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   ManagementRoute: ManagementRouteWithChildren,
