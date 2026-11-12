@@ -387,13 +387,21 @@ function ProviderServices() {
                     className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-100"
                   >
                     <option value="">Select an existing category</option>
-                    {categories.map((c: any) => (
-                      <option key={c.id} value={c.id}>
-                        {c.parent_category_id
-                          ? `— ${c.name} (under ${categories.find((p: any) => p.id === c.parent_category_id)?.name ?? "…"})`
-                          : `${c.name} (Platform)`}
-                      </option>
-                    ))}
+                    {categories
+                      .filter((c: any) => c.parent_category_id)
+                      .sort((a: any, b: any) => {
+                        const parentA = categories.find((p: any) => p.id === a.parent_category_id)?.name ?? "";
+                        const parentB = categories.find((p: any) => p.id === b.parent_category_id)?.name ?? "";
+                        return parentA.localeCompare(parentB) || a.name.localeCompare(b.name);
+                      })
+                      .map((c: any) => {
+                        const parent = categories.find((p: any) => p.id === c.parent_category_id);
+                        return (
+                          <option key={c.id} value={c.id}>
+                            {parent?.name ?? "Unknown"} → {c.name}
+                          </option>
+                        );
+                      })}
                   </select>
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center" aria-hidden="true">
