@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 function getProjectRef(): string | null {
-  const url = (import.meta as any).env?.['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+  const url = (import.meta as any).env?.['VITE_SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
   if (typeof url !== 'string') return null;
   const match = url.match(/https?:\/\/([^.]+)\./);
   return match ? (match[1] as string) : null;
