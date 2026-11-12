@@ -102,14 +102,10 @@ export const importServices = createServerFn({ method: "POST" })
         // Step A: Normalize to USDT
         let usdtCost = providerRate;
         if (providerCurrency === 'PKR' || providerCurrency === 'PKR') {
-          // If provider is already in base currency (PKR or PKR), cost is as is
-          // Note: The logic previously assumed provider costs were in USDT unless PKR.
-          // If the provider rate is in PKR and the customer currency is also PKR, no conversion needed.
           usdtCost = providerRate / usdtExchangeRate;
         } else if (providerCurrency === 'USD' || providerCurrency === 'USDT') {
-          usdtCost = providerRate; // Base USDT
+          usdtCost = providerRate;
         } else {
-          // Default: assume USDT unless explicitly specified as base currency
           usdtCost = providerRate;
         }
         
@@ -134,7 +130,6 @@ export const importServices = createServerFn({ method: "POST" })
         } else if (roundingMethod === 'none') {
           // keep as is
         } else {
-          // default 2 decimals
           customerPrice = Math.round(customerPrice * 100) / 100;
         }
 
@@ -146,7 +141,7 @@ export const importServices = createServerFn({ method: "POST" })
           .eq('provider_service_id', String(ps.provider_service_id))
           .maybeSingle();
 
-        // Create/Update internal service (stays INACTIVE until admin activates it)
+        // Create/Update internal service (automatically active upon import)
         const { error: upsertError } = await supabaseAdmin
           .from('services')
           .upsert({
@@ -156,9 +151,6 @@ export const importServices = createServerFn({ method: "POST" })
             customer_rate: customerPrice,
             min_quantity: ps.provider_min || 1,
             max_quantity: ps.provider_max || 9999999,
-            // Use the provider's real description when we actually have one
-            // (see sync fix above) — never show the raw provider service ID
-            // to customers as a fallback; leave it blank instead.
             description: ps.description || null,
             provider_id: providerId,
             provider_service_id: String(ps.provider_service_id),
@@ -175,7 +167,7 @@ export const importServices = createServerFn({ method: "POST" })
             profit_value: markupAmount,
             customer_price: customerPrice,
             
-            status: 'inactive', // Remain inactive until admin review
+            status: 'active', // Automatically activate imported services
             last_synced_at: new Date().toISOString()
           }, {
             onConflict: 'provider_id,provider_service_id'
