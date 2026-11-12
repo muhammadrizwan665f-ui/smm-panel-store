@@ -1,3 +1,4 @@
+
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
@@ -27,7 +28,7 @@ function readAuthCookie(cookieHeader: string | null | undefined): { access_token
 export const getSession = createServerFn({ method: "GET" })
   .handler(async () => {
     const { createClient } = await import("@supabase/supabase-js");
-    const SUPABASE_URL = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+    const SUPABASE_URL = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
 
     // A plain (anon-key) client is enough to validate a user's own token —
