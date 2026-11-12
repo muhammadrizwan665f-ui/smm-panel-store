@@ -7,7 +7,8 @@ import { Link, useNavigate, useLocation, useSearch, useRouter } from "@tanstack/
 import { signIn, completeProfile } from "@/lib/auth/auth.functions";
 import { establishClientSession } from "@/lib/auth/client-session";
 import { BUSINESS } from "@/lib/business";
-import { AuthField, AUTH_INPUT_CLASS } from "./AuthField";
+import { AuthField, AUTH_INPUT_CLASS } from "./AuthField"; 
+import { GoogleSignInButton } from "./GoogleSignInButton";
 
 const loginSchema = z.object({
   identifier: z.string().min(1, "Mobile or email is required"),
@@ -193,7 +194,7 @@ export const LoginForm = ({ embedded = false }: { embedded?: boolean }) => {
           {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Login to Dashboard"}
         </button>
 
-        {/* GOOGLE_LOGIN_SLOT: add an "or" divider + "Continue with Google" button here later. */}
+      {!isManagement && <GoogleSignInButton />}
 
         {!isManagement && !embedded && (
           <p className="text-center text-sm text-muted-foreground">
