@@ -50,36 +50,59 @@ function ProviderServices() {
   const fetchData = async () => {
     setLoading(true);
     console.log(`[UI] Loading services for provider ${id}...`);
-    
-    // We use standard Supabase client here. 
-    // RLS: "Anyone can view provider_services" is true, so it should work.
-    const [servicesRes, catsRes, settingsRes] = await Promise.all([
-      supabase.from('provider_services').select('*', { count: 'exact' }).eq('provider_id', id).order('provider_service_id', { ascending: true }),
-      supabase.from('service_categories').select('*').order('name'),
-      getCurrencySettings()
-    ]);
 
-    if (servicesRes.error) {
-      console.error("[UI] Failed to load services:", servicesRes.error);
-      toast.error("Failed to load services: " + servicesRes.error.message);
-    } else {
-      console.log(`[UI] Loaded ${servicesRes.data?.length || 0} services from DB`);
-      setServices(servicesRes.data || []);
-    }
-    
-    if (catsRes.error) toast.error("Failed to load categories");
-    else setCategories(catsRes.data || []);
+    try {
+      // Load provider services independently
+      const servicesPromise = supabase
+        .from('provider_services')
+        .select('*', { count: 'exact' })
+        .eq('provider_id', id)
+        .order('provider_service_id', { ascending: true });
 
-    if (settingsRes) {
-      try {
-        const parsed = typeof settingsRes === 'string' ? JSON.parse(settingsRes) : settingsRes;
-        setCurrencySettings(parsed);
-      } catch (e) {
-        console.error("[UI] Failed to parse currency settings", e);
+      const categoriesPromise = supabase
+        .from('service_categories')
+        .select('*')
+        .order('name');
+
+      const [servicesRes, catsRes] = await Promise.all([
+        servicesPromise,
+        categoriesPromise
+      ]);
+
+      if (servicesRes.error) {
+        console.error("[UI] Services error:", servicesRes.error);
+        toast.error("Services error: " + servicesRes.error.message);
+      } else {
+        console.log("[UI] Services loaded:", servicesRes.data?.length);
+        setServices(servicesRes.data || []);
       }
+
+      if (catsRes.error) {
+        console.error("[UI] Categories error:", catsRes.error);
+        toast.error("Categories error: " + catsRes.error.message);
+      } else {
+        setCategories(catsRes.data || []);
+      }
+
+      // Currency settings must not block services
+      try {
+        const settingsRes = await getCurrencySettings();
+        const parsed = typeof settingsRes === 'string'
+          ? JSON.parse(settingsRes)
+          : settingsRes;
+
+        setCurrencySettings(parsed);
+      } catch (error) {
+        console.error("[UI] Currency settings error:", error);
+        setCurrencySettings(null);
+      }
+
+    } catch (error: any) {
+      console.error("[UI] Fetch data error:", error);
+      toast.error("Failed to load data: " + error.message);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   React.useEffect(() => {
@@ -176,13 +199,11 @@ function ProviderServices() {
   );
 
   const calculatePreview = (providerRate: number) => {
-    if (!currencySettings) return { cost: "0.00", price: "0.00", usdt: "0.00" };
+    if (!currencySettings) return { cost: "0.00", price: "0.00", usdt: "0.00", symbol: "$" };
     
     const usdtExchangeRate = parseFloat(currencySettings.usdt_rate || '280');
     const usdtToInr = parseFloat(currencySettings.usdt_to_inr || '280');
     
-    // Attempt to detect provider currency from the first selected service if available,
-    // otherwise fallback to a default or assume from rate value (PKR usually > 1, USDT usually < 1)
     let providerCurrency = 'USDT';
     const sampleService = services.find(s => s.provider_service_id === selectedServices[0]);
     if (sampleService?.provider_currency) {
@@ -193,8 +214,6 @@ function ProviderServices() {
 
     let usdtCost = providerRate;
     if (providerCurrency === 'PKR') {
-      usdtCost = providerRate / usdtToInr;
-    } else if (providerCurrency === 'PKR') {
       usdtCost = providerRate / usdtToInr;
     }
 
