@@ -64,30 +64,95 @@ export const importServices = createServerFn({ method: "POST" })
       throw new Error("No provider services found to import");
     }
 
-    // 4. Resolve category (admin chooses their own category during import)
+    // 4. Resolve exact target subcategory
     let targetCategoryId = categoryId || undefined;
-    if (createNewCategory) {
-      const { data: newCat, error: catError } = await supabaseAdmin
-        .from('service_categories')
-        .upsert({ name: createNewCategory, parent_category_id: parentCategoryId || null }, { onConflict: 'name' })
-        .select('id')
-        .single();
 
-      if (catError) {
-        const { data: existingCat } = await supabaseAdmin
-          .from('service_categories')
-          .select('id')
-          .eq('name', createNewCategory)
-          .maybeSingle();
-        if (!existingCat) {
-          return JSON.stringify({ success: false, message: `Category error: ${catError.message}` });
-        }
-        targetCategoryId = existingCat.id;
+    if (createNewCategory?.trim()) {
+      const categoryName = createNewCategory.trim();
+
+      if (!parentCategoryId) {
+        return JSON.stringify({
+          success: false,
+          message: "Please select a parent platform for the new subcategory."
+        });
+      }
+
+      // Verify that selected parent is a top-level platform
+      const { data: parentPlatform, error: parentError } = await supabaseAdmin
+        .from("service_categories")
+        .select("id")
+        .eq("id", parentCategoryId)
+        .is("parent_category_id", null)
+        .maybeSingle();
+
+      if (parentError || !parentPlatform) {
+        return JSON.stringify({
+          success: false,
+          message: "Invalid parent platform selected."
+        });
+      }
+
+      // Find category only under the selected platform
+      const { data: existingCategory, error: findError } = await supabaseAdmin
+        .from("service_categories")
+        .select("id")
+        .eq("name", categoryName)
+        .eq("parent_category_id", parentCategoryId)
+        .maybeSingle();
+
+      if (findError) {
+        return JSON.stringify({
+          success: false,
+          message: `Category lookup error: ${findError.message}`
+        });
+      }
+
+      if (existingCategory) {
+        targetCategoryId = existingCategory.id;
       } else {
-        targetCategoryId = newCat?.id;
+        // Create a new category without changing another platform's category
+        const { data: newCategory, error: insertError } = await supabaseAdmin
+          .from("service_categories")
+          .insert({
+            name: categoryName,
+            parent_category_id: parentCategoryId,
+            service_type: "api",
+            status: "active"
+          })
+          .select("id")
+          .single();
+
+        if (insertError) {
+          return JSON.stringify({
+            success: false,
+            message: `Category creation error: ${insertError.message}`
+          });
+        }
+
+        targetCategoryId = newCategory.id;
+      }
+    } else if (targetCategoryId) {
+      // Verify selected category is a subcategory, not a platform
+      const { data: selectedCategory, error: categoryError } = await supabaseAdmin
+        .from("service_categories")
+        .select("id, parent_category_id")
+        .eq("id", targetCategoryId)
+        .maybeSingle();
+
+      if (categoryError || !selectedCategory || !selectedCategory.parent_category_id) {
+        return JSON.stringify({
+          success: false,
+          message: "Please select a valid platform subcategory."
+        });
       }
     }
 
+    if (!targetCategoryId) {
+      return JSON.stringify({
+        success: false,
+        message: "Please select or create a target subcategory."
+      });
+    }
 
     let importedCount = 0;
     let updatedCount = 0;
