@@ -1,529 +1,194 @@
-@import "tailwindcss" source(none);
-@source "../src";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* =====================================================
+   NOORIX DIGITAL LAB — PREMIUM ROCKET LAUNCH V2
+   Smooth vertical flight • Neon blue glow • Social trail
+   ===================================================== */
 
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
-  
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-}
-
-:root {
-  --radius: 1rem;
-  
-  /* Modern Light SMM Theme - SaaS Style */
-  --background: oklch(0.93 0.04 280); /* Soft lavender-blue background like the image */
-  --foreground: oklch(0.25 0.05 260);
-  
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.05 260);
-  
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.05 260);
-  
-  /* Soft Blue/Purple Accent Primary */
-  --primary: oklch(0.65 0.18 260);
-  --primary-foreground: oklch(1 0 0);
-  
-  --secondary: oklch(0.96 0.02 260);
-  --secondary-foreground: oklch(0.3 0.06 260);
-  
-  --muted: oklch(0.96 0.01 260);
-  --muted-foreground: oklch(0.5 0.03 260);
-  
-  --accent: oklch(0.94 0.03 270);
-  --accent-foreground: oklch(0.3 0.08 260);
-  
-  --destructive: oklch(0.6 0.18 25);
-  --destructive-foreground: oklch(1 0 0);
-  
-  --border: oklch(0.92 0.01 260);
-  --input: oklch(0.94 0.01 260);
-  --ring: oklch(0.65 0.18 260 / 0.3);
-}
-
-/* Base resets */
-@layer base {
-  * {
-    border-color: var(--color-border);
-  }
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  }
-}
-
-@utility glass-white {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-}
-
-/* Typography for long-form policy text (Privacy, Terms, Refund, ...) */
-@layer components {
-  .legal-prose p {
-    margin-top: 0.85rem;
-    line-height: 1.8;
-    color: var(--muted-foreground);
-    font-size: 0.95rem;
-  }
-  .legal-prose ul,
-  .legal-prose ol {
-    margin-top: 0.85rem;
-    padding-left: 1.25rem;
-    color: var(--muted-foreground);
-    font-size: 0.95rem;
-  }
-  .legal-prose ul {
-    list-style: disc;
-  }
-  .legal-prose ol {
-    list-style: decimal;
-  }
-  .legal-prose li {
-    margin-top: 0.45rem;
-    line-height: 1.75;
-  }
-  .legal-prose li::marker {
-    color: var(--primary);
-  }
-  .legal-prose strong {
-    color: var(--foreground);
-    font-weight: 700;
-  }
-  .legal-prose a {
-    color: var(--primary);
-    font-weight: 700;
-  }
-  .legal-prose h3 {
-    margin-top: 1.25rem;
-    font-weight: 800;
-    color: var(--foreground);
-  }
-}
-
-@utility gradient-primary {
-  background: linear-gradient(135deg, oklch(0.7 0.15 260), oklch(0.75 0.18 300));
-}
-
-@utility gradient-soft {
-  background: linear-gradient(135deg, oklch(0.97 0.01 260), oklch(0.95 0.03 300));
-}
-
-@utility text-gradient {
-  background: linear-gradient(135deg, oklch(0.55 0.2 260), oklch(0.6 0.22 300));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-@utility card-shadow {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-}
-
-/* Hide Lovable badge across user and admin panels */
-[class*="made-with-lovable"],
-[class*="lovable-badge"],
-[class*="lovable-brand"],
-a[href*="lovable.app"][target="_blank"],
-iframe[src*="lovable.app"],
-[data-testid="lovable-badge"],
-#lovable-badge {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  height: 0 !important;
-  width: 0 !important;
-  overflow: hidden !important;
-}
-
-/* ==========================================================
-   PANEL THEMES — switchable from Admin → Settings → Branding
-   ========================================================== */
-
-/* 1. Aurora (default) is defined in :root above */
-
-/* 2. Ocean — crisp corporate blue */
-[data-theme="ocean"] {
-  --background: oklch(0.95 0.025 230);
-  --foreground: oklch(0.24 0.045 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.045 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.045 240);
-  --primary: oklch(0.58 0.16 235);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0.02 230);
-  --secondary-foreground: oklch(0.3 0.06 235);
-  --muted: oklch(0.96 0.012 230);
-  --muted-foreground: oklch(0.5 0.03 235);
-  --accent: oklch(0.93 0.035 220);
-  --accent-foreground: oklch(0.3 0.07 235);
-  --destructive: oklch(0.6 0.18 25);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.91 0.015 230);
-  --input: oklch(0.94 0.015 230);
-  --ring: oklch(0.58 0.16 235 / 0.3);
-}
-
-/* 3. Emerald — fresh premium green */
-[data-theme="emerald"] {
-  --background: oklch(0.95 0.03 160);
-  --foreground: oklch(0.23 0.04 165);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.04 165);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.04 165);
-  --primary: oklch(0.6 0.14 165);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0.02 165);
-  --secondary-foreground: oklch(0.3 0.06 165);
-  --muted: oklch(0.96 0.012 165);
-  --muted-foreground: oklch(0.5 0.025 165);
-  --accent: oklch(0.93 0.04 160);
-  --accent-foreground: oklch(0.3 0.07 165);
-  --destructive: oklch(0.6 0.18 25);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.91 0.015 165);
-  --input: oklch(0.94 0.015 165);
-  --ring: oklch(0.6 0.14 165 / 0.3);
-}
-
-/* 4. Sunset — warm luxury amber/rose */
-[data-theme="sunset"] {
-  --background: oklch(0.95 0.03 60);
-  --foreground: oklch(0.25 0.04 40);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.04 40);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.04 40);
-  --primary: oklch(0.63 0.17 35);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0.025 60);
-  --secondary-foreground: oklch(0.32 0.06 40);
-  --muted: oklch(0.96 0.015 60);
-  --muted-foreground: oklch(0.52 0.03 45);
-  --accent: oklch(0.93 0.045 50);
-  --accent-foreground: oklch(0.32 0.08 40);
-  --destructive: oklch(0.58 0.19 25);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.91 0.02 60);
-  --input: oklch(0.94 0.02 60);
-  --ring: oklch(0.63 0.17 35 / 0.3);
-}
-
-[data-theme="ocean"] .gradient-primary {
-  background: linear-gradient(135deg, oklch(0.62 0.15 235), oklch(0.68 0.14 205));
-}
-[data-theme="emerald"] .gradient-primary {
-  background: linear-gradient(135deg, oklch(0.64 0.14 165), oklch(0.72 0.14 190));
-}
-[data-theme="sunset"] .gradient-primary {
-  background: linear-gradient(135deg, oklch(0.68 0.16 40), oklch(0.72 0.15 70));
-}
-[data-theme="ocean"] .text-gradient {
-  background: linear-gradient(135deg, oklch(0.5 0.17 240), oklch(0.55 0.16 210));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-[data-theme="emerald"] .text-gradient {
-  background: linear-gradient(135deg, oklch(0.5 0.15 165), oklch(0.55 0.14 190));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-[data-theme="sunset"] .text-gradient {
-  background: linear-gradient(135deg, oklch(0.55 0.18 35), oklch(0.6 0.16 70));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* MOBILE COMPACT DESIGN — Noorix Digital Lab */
-@media (max-width: 640px) {
-  html {
-    font-size: 14px;
-  }
-
-  body {
-    overflow-x: hidden;
-    font-size: 13px;
-  }
-
-  /* Compact header */
-  header.sticky > div {
-    gap: 8px;
-    padding: 8px 10px;
-  }
-
-  header.sticky nav {
-    gap: 5px;
-  }
-
-  header.sticky nav a {
-    padding: 6px 8px;
-    font-size: 10px;
-    border-radius: 8px;
-  }
-
-  /* Hero section */
-  main section {
-    scroll-margin-top: 65px;
-  }
-
-  main section:first-child {
-    padding-top: 12px;
-  }
-
-  main section:first-child > div {
-    border-radius: 18px;
-  }
-
-  main section:first-child > div > div:first-child {
-    padding: 22px 18px;
-    gap: 14px;
-  }
-
-  main h1 {
-    font-size: 25px !important;
-    line-height: 1.2 !important;
-    letter-spacing: -0.6px;
-  }
-
-  main h2 {
-    font-size: 21px !important;
-    line-height: 1.25;
-  }
-
-  main h3 {
-    font-size: 15px !important;
-  }
-
-  main p {
-    font-size: 12px;
-    line-height: 1.55;
-  }
-
-  /* Buttons */
-  main a,
-  main button {
-    font-size: 12px;
-  }
-
-  /* Compact cards and sections */
-  main section:not(:first-child) {
-    padding-top: 28px;
-    margin-top: 12px;
-  }
-
-  main section > div {
-    gap: 12px;
-  }
-
-  main .rounded-3xl,
-  main .rounded-[2rem] {
-    border-radius: 16px;
-  }
-
-  main .glass-white,
-  main .card-shadow {
-    padding: 14px;
-  }
-
-  /* Reduce excessive paragraph spacing */
-  main p + p {
-    margin-top: 8px;
-  }
-
-  /* Compact about information */
-  main dl {
-    padding: 14px;
-  }
-
-  /* Compact FAQ */
-  main details {
-    padding: 12px;
-  }
-
-  /* Footer */
-  footer {
-    margin-top: 28px;
-  }
-
-  footer > div:first-child {
-    padding-top: 28px;
-    padding-bottom: 24px;
-    gap: 22px;
-  }
-
-  /* Prevent horizontal overflow */
-  main,
-  header,
-  footer {
-    max-width: 100%;
-    overflow-wrap: anywhere;
-  }
-}
-
-
-/* =========================================
-   NOORIX — SOCIAL BOOST ROCKET ANIMATION
-   ========================================= */
-
+/* Hero launch stage */
 main section:first-child > div > div:first-child {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
 
-/* Social engagement trail */
-main section:first-child > div > div:first-child::before {
-  content: "♥   ♥   ♡   💬   ♥   ♡   👍";
-  position: absolute;
-  right: 24px;
-  bottom: 20px;
-  z-index: 2;
-  color: #ffffff;
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: 5px;
-  white-space: nowrap;
-  text-shadow: 0 0 12px rgba(255,255,255,.8);
-  pointer-events: none;
-  animation: noorix-social-trail 4s cubic-bezier(.2,.7,.3,1) forwards;
+/* Subtle launch atmosphere */
+main section:first-child > div > div:first-child {
+  background-image:
+    radial-gradient(ellipse at 90% 85%, rgba(255,255,255,.18), transparent 42%),
+    radial-gradient(ellipse at 10% 10%, rgba(255,255,255,.10), transparent 40%);
 }
 
-/* Flying rocket */
+/* Social engagement particles */
+main section:first-child > div > div:first-child::before {
+  content: "♥   ♡   •   ♥   ✦   ♡   •   ♥";
+  position: absolute;
+  z-index: 2;
+  right: 31px;
+  bottom: 22px;
+  pointer-events: none;
+  white-space: nowrap;
+
+  color: rgba(255,255,255,.95);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-shadow:
+    0 0 8px rgba(255,255,255,.9),
+    0 0 22px rgba(130,190,255,.9);
+
+  animation: noorix-particle-flight 6s linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Rocket */
 main section:first-child > div > div:first-child::after {
   content: "🚀";
   position: absolute;
-  right: 25px;
-  bottom: 18px;
   z-index: 3;
-  font-size: 64px;
-  line-height: 1;
-  filter: drop-shadow(0 0 12px rgba(255,255,255,.65));
+  right: 28px;
+  bottom: 18px;
+  display: block;
   pointer-events: none;
-  animation: noorix-rocket-launch 4s cubic-bezier(.2,.7,.3,1) forwards;
+
+  font-size: 66px;
+  line-height: 1;
+  transform-origin: center;
+  filter:
+    drop-shadow(0 0 7px rgba(255,255,255,.8))
+    drop-shadow(0 0 18px rgba(80,170,255,.9));
+
+  animation: noorix-rocket-flight 6s linear infinite;
+  will-change: transform, opacity;
 }
 
-/* Rocket flies upward */
-@keyframes noorix-rocket-launch {
+/* Straight, smooth upward flight */
+@keyframes noorix-rocket-flight {
   0% {
-    transform: translate(0, 0) rotate(-38deg) scale(.75);
+    transform: translate3d(0, 0, 0) scale(.78);
     opacity: 0;
   }
-  12% {
+
+  8% {
+    transform: translate3d(0, -10px, 0) scale(.95);
     opacity: 1;
   }
-  45% {
-    transform: translate(-65px, -180px) rotate(-38deg) scale(1);
+
+  72% {
+    transform: translate3d(0, -390px, 0) scale(1);
     opacity: 1;
   }
-  80% {
-    transform: translate(-125px, -390px) rotate(-38deg) scale(.9);
-    opacity: 1;
+
+  86% {
+    transform: translate3d(0, -460px, 0) scale(.92);
+    opacity: 0;
   }
+
   100% {
-    transform: translate(-160px, -520px) rotate(-38deg) scale(.55);
+    transform: translate3d(0, -460px, 0) scale(.92);
     opacity: 0;
   }
 }
 
-/* Hearts, likes and comments follow the rocket */
-@keyframes noorix-social-trail {
+/* Social trail follows the same vertical path */
+@keyframes noorix-particle-flight {
   0% {
-    transform: translate(0, 0) scale(.5);
+    transform: translate3d(0, 0, 0) scale(.55);
     opacity: 0;
   }
-  15% {
-    opacity: 1;
-  }
-  50% {
-    transform: translate(-65px, -180px) scale(1);
+
+  12% {
     opacity: .95;
   }
+
+  72% {
+    transform: translate3d(0, -365px, 0) scale(1);
+    opacity: .9;
+  }
+
+  86% {
+    transform: translate3d(0, -430px, 0) scale(.75);
+    opacity: 0;
+  }
+
   100% {
-    transform: translate(-145px, -490px) scale(.7);
+    transform: translate3d(0, -430px, 0) scale(.75);
     opacity: 0;
   }
 }
 
-/* Mobile animation */
+/* Mobile optimization */
 @media (max-width: 640px) {
   main section:first-child > div > div:first-child::after {
+    right: 15px;
+    bottom: 15px;
     font-size: 48px;
-    right: 14px;
-    bottom: 12px;
   }
 
   main section:first-child > div > div:first-child::before {
-    font-size: 14px;
-    right: 12px;
-    bottom: 14px;
+    right: 13px;
+    bottom: 17px;
+    font-size: 13px;
     letter-spacing: 2px;
   }
 
-  @keyframes noorix-rocket-launch {
+  @keyframes noorix-rocket-flight {
     0% {
-      transform: translate(0, 0) rotate(-38deg) scale(.7);
+      transform: translate3d(0, 0, 0) scale(.72);
       opacity: 0;
     }
-    12% { opacity: 1; }
-    50% {
-      transform: translate(-35px, -170px) rotate(-38deg) scale(.9);
+
+    8% {
+      transform: translate3d(0, -8px, 0) scale(.9);
       opacity: 1;
     }
+
+    72% {
+      transform: translate3d(0, -280px, 0) scale(.95);
+      opacity: 1;
+    }
+
+    86% {
+      transform: translate3d(0, -330px, 0) scale(.8);
+      opacity: 0;
+    }
+
     100% {
-      transform: translate(-65px, -370px) rotate(-38deg) scale(.5);
+      transform: translate3d(0, -330px, 0) scale(.8);
       opacity: 0;
     }
   }
 
-  @keyframes noorix-social-trail {
+  @keyframes noorix-particle-flight {
     0% {
-      transform: translate(0, 0) scale(.5);
+      transform: translate3d(0, 0, 0) scale(.5);
       opacity: 0;
     }
-    15% { opacity: 1; }
+
+    12% {
+      opacity: .9;
+    }
+
+    72% {
+      transform: translate3d(0, -260px, 0) scale(.9);
+      opacity: .85;
+    }
+
+    86% {
+      transform: translate3d(0, -310px, 0) scale(.7);
+      opacity: 0;
+    }
+
     100% {
-      transform: translate(-70px, -350px) scale(.7);
+      transform: translate3d(0, -310px, 0) scale(.7);
       opacity: 0;
     }
   }
 }
 
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   main section:first-child > div > div:first-child::before,
   main section:first-child > div > div:first-child::after {
     animation: none !important;
   }
 }
-
