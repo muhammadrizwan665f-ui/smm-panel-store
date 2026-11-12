@@ -95,8 +95,8 @@ function faqList(name: string) {
 }
 
 /** Login / Create Account tabs, shown directly on the homepage. */
-function AuthCard() {
-  const [tab, setTab] = React.useState<"login" | "register">("login");
+function AuthCard({ initialTab }: { initialTab: "login" | "register" }) {
+  const [tab, setTab] = React.useState<"login" | "register">(initialTab);
 
   return (
     <div id="auth" className="p-6 sm:p-9 flex flex-col justify-center scroll-mt-24">
@@ -138,7 +138,12 @@ function AuthCard() {
   );
 }
 
-export function LandingPage() {
+/**
+ * The full public page. `/`, `/login` and `/register` all render this, so a
+ * visitor always lands on the complete business page (services, policies,
+ * address, FAQ, footer) with the sign-in card already open on the right tab.
+ */
+export function LandingPage({ initialTab = "login" }: { initialTab?: "login" | "register" }) {
   const { name, whatsappUrl } = useBranding();
 
   return (
@@ -191,7 +196,7 @@ export function LandingPage() {
             </ul>
           </div>
 
-          <AuthCard />
+          <AuthCard initialTab={initialTab} />
         </div>
       </section>
 

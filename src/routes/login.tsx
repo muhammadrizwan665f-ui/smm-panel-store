@@ -1,6 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { LoginForm } from "@/components/auth/LoginForm";
-import { AuthShell } from "@/components/auth/AuthShell";
+import { LandingPage } from "@/components/landing/LandingPage";
 import { getSession } from "@/lib/auth/session.functions";
 import { BUSINESS } from "@/lib/business";
 
@@ -29,9 +28,5 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  return (
-    <AuthShell>
-      <LoginForm />
-    </AuthShell>
-  );
+  return <LandingPage initialTab="login" />;
 }

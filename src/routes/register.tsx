@@ -1,6 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { RegisterForm } from "@/components/auth/RegisterForm";
-import { AuthShell } from "@/components/auth/AuthShell";
+import { LandingPage } from "@/components/landing/LandingPage";
 import { getSession } from "@/lib/auth/session.functions";
 import { BUSINESS } from "@/lib/business";
 
@@ -24,9 +23,5 @@ export const Route = createFileRoute("/register")({
 });
 
 function RegisterPage() {
-  return (
-    <AuthShell>
-      <RegisterForm />
-    </AuthShell>
-  );
+  return <LandingPage initialTab="register" />;
 }
