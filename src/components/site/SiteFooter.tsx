@@ -1,37 +1,94 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import { BUSINESS, POLICY_LINKS } from "@/lib/business";
-import { BrandMark } from "./SiteHeader";
+import { Mail, MessageCircle } from "lucide-react";
+import { BUSINESS, MAPS_URL } from "@/lib/business";
 import { useBranding } from "./useBranding";
 
+const QUICK_LINKS = [
+  { label: "Services", to: "/", hash: "services" },
+  { label: "About Us", to: "/", hash: "about" },
+  { label: "How it works", to: "/", hash: "how-it-works" },
+  { label: "Payment Methods", to: "/", hash: "payments" },
+  { label: "FAQs", to: "/", hash: "faq" },
+  { label: "Contact Us", to: "/contact" },
+  { label: "Blog", to: "/blog" },
+  { label: "Login", to: "/login" },
+  { label: "Create Account", to: "/register" },
+] as const;
+
+const POLICIES = [
+  { label: "Terms & Conditions", to: "/terms-and-conditions" },
+  { label: "Privacy Policy", to: "/privacy-policy" },
+  { label: "Refund Policy", to: "/refund-policy" },
+  { label: "Return Policy", to: "/return-policy" },
+  { label: "Digital Delivery / Service Policy", to: "/delivery-policy" },
+  { label: "Contact & Business Address", to: "/contact" },
+] as const;
+
+const LINK = "text-slate-300 hover:text-white transition-colors";
+
 export function SiteFooter() {
-  const { name, email } = useBranding();
+  const { name, email, whatsappUrl } = useBranding();
 
   return (
-    <footer className="mt-16 border-t border-white/60 bg-white/60 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-4 py-12 grid gap-10 md:grid-cols-[1.4fr_1fr_1.2fr]">
+    <footer className="mt-16 bg-slate-950 text-slate-300 border-t-4 border-primary">
+      <div className="max-w-7xl mx-auto px-4 pt-14 pb-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1.1fr_1.3fr]">
+        {/* Brand */}
         <div className="space-y-4">
-          <BrandMark />
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
-            {name} provides digital social media marketing services. Orders are delivered online —
-            no physical goods are shipped.
+          <h3 className="text-lg font-black text-white">{name}</h3>
+          <p className="text-sm leading-relaxed text-slate-400">
+            {name} provides digital social media marketing services for Instagram, Facebook, YouTube,
+            Telegram and more. Everything is ordered and delivered online — no physical goods are
+            shipped.
           </p>
-          <p className="text-xs text-muted-foreground/80">
-            All prices are shown in {BUSINESS.currency}.
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-2 text-xs font-bold text-white transition-colors"
+            >
+              <MessageCircle size={14} /> WhatsApp
+            </a>
+            {email ? (
+              <a
+                href={`mailto:${email}`}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-2 text-xs font-bold text-white transition-colors"
+              >
+                <Mail size={14} /> Email Us
+              </a>
+            ) : (
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-2 text-xs font-bold text-white transition-colors"
+              >
+                <Mail size={14} /> Contact Us
+              </Link>
+            )}
+          </div>
+          <div className="pt-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+              We accept
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["PayFast", "Bank / Wallet Transfer"].map((m) => (
+                <span
+                  key={m}
+                  className="rounded-lg bg-white text-slate-900 px-2.5 py-1.5 text-[11px] font-black"
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
+        {/* Quick links */}
         <div>
-          <h3 className="text-xs font-black uppercase tracking-widest text-foreground/70 mb-4">
-            Policies
-          </h3>
+          <h3 className="text-xs font-black uppercase tracking-widest text-white mb-4">Quick Links</h3>
           <ul className="space-y-2.5 text-sm">
-            {POLICY_LINKS.map((l) => (
-              <li key={l.to}>
-                <Link
-                  to={l.to}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
+            {QUICK_LINKS.map((l) => (
+              <li key={l.label}>
+                <Link to={l.to as any} hash={"hash" in l ? l.hash : undefined} className={LINK}>
                   {l.label}
                 </Link>
               </li>
@@ -39,47 +96,89 @@ export function SiteFooter() {
           </ul>
         </div>
 
+        {/* Policies */}
         <div>
-          <h3 className="text-xs font-black uppercase tracking-widest text-foreground/70 mb-4">
-            Business Office
-          </h3>
-          <ul className="space-y-3 text-sm text-muted-foreground">
-            <li className="flex gap-2.5">
-              <MapPin size={16} className="text-primary mt-0.5 shrink-0" />
-              <address className="not-italic leading-relaxed">
-                {BUSINESS.addressLines.map((line) => (
-                  <span key={line} className="block">
-                    {line}
-                  </span>
-                ))}
-              </address>
-            </li>
-            <li className="flex gap-2.5 items-center">
-              <Phone size={16} className="text-primary shrink-0" />
-              <a href={`tel:${BUSINESS.phoneIntl}`} className="hover:text-primary transition-colors">
-                {BUSINESS.phoneDisplay}
-              </a>
-            </li>
-            {email && (
-              <li className="flex gap-2.5 items-center">
-                <Mail size={16} className="text-primary shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-primary transition-colors break-all">
-                  {email}
-                </a>
+          <h3 className="text-xs font-black uppercase tracking-widest text-white mb-4">Policies</h3>
+          <ul className="space-y-2.5 text-sm">
+            {POLICIES.map((l) => (
+              <li key={l.label}>
+                <Link to={l.to} className={LINK}>
+                  {l.label}
+                </Link>
               </li>
-            )}
-            <li className="flex gap-2.5 items-center">
-              <Clock size={16} className="text-primary shrink-0" />
-              <span>{BUSINESS.supportHours}</span>
-            </li>
+            ))}
           </ul>
+        </div>
+
+        {/* Contact info */}
+        <div>
+          <h3 className="text-xs font-black uppercase tracking-widest text-white mb-4">Contact Info</h3>
+          <dl className="space-y-4 text-sm">
+            <div>
+              <dt className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Business Name
+              </dt>
+              <dd className="font-semibold text-white">{BUSINESS.name}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Phone / WhatsApp
+              </dt>
+              <dd>
+                <a href={`tel:${BUSINESS.phoneIntl}`} className="font-semibold text-white">
+                  {BUSINESS.phoneDisplay}
+                </a>
+              </dd>
+            </div>
+            {email && (
+              <div>
+                <dt className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Email
+                </dt>
+                <dd>
+                  <a href={`mailto:${email}`} className="font-semibold text-white break-all">
+                    {email}
+                  </a>
+                </dd>
+              </div>
+            )}
+            <div>
+              <dt className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Business Office Address
+              </dt>
+              <dd>
+                <address className="not-italic font-semibold text-white leading-relaxed">
+                  {BUSINESS.addressLines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </address>
+                <a
+                  href={MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-400 hover:text-white underline underline-offset-2"
+                >
+                  View on map
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                Support Hours
+              </dt>
+              <dd className="font-semibold text-white">{BUSINESS.supportHours}</dd>
+            </div>
+          </dl>
         </div>
       </div>
 
-      <div className="border-t border-border/60">
-        <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+      <div className="border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
           <span>
-            © {new Date().getFullYear()} {BUSINESS.name}. All rights reserved.
+            © {new Date().getFullYear()} {BUSINESS.name}. All rights reserved. Prices in{" "}
+            {BUSINESS.currency}.
           </span>
           <span>{BUSINESS.domain}</span>
         </div>

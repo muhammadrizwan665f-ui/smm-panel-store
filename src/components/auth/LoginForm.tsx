@@ -15,7 +15,11 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export const LoginForm = () => {
+/**
+ * `embedded` renders the bare form (no outer card / heading), used inside the
+ * tabbed login card on the homepage.
+ */
+export const LoginForm = ({ embedded = false }: { embedded?: boolean }) => {
   const router = useRouter();
   const loaderData = router.state.matches.find((m: any) => m.routeId === "__root__")
     ?.loaderData as any;
@@ -98,7 +102,12 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow">
+    <div
+      className={
+        embedded ? "w-full" : "w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow"
+      }
+    >
+      {!embedded && (
       <div className="mb-7">
         {logoUrl && (
           <div className="mb-5">
@@ -112,6 +121,7 @@ export const LoginForm = () => {
           {isManagement ? "Sign in to the admin panel" : `Sign in to your ${brandName} account`}
         </p>
       </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
         <AuthField
@@ -184,7 +194,7 @@ export const LoginForm = () => {
 
         {/* GOOGLE_LOGIN_SLOT: add an "or" divider + "Continue with Google" button here later. */}
 
-        {!isManagement && (
+        {!isManagement && !embedded && (
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link

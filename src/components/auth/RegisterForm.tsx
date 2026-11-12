@@ -25,7 +25,11 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export function RegisterForm() {
+/**
+ * `embedded` renders the bare form (no outer card / heading), used inside the
+ * tabbed login card on the homepage.
+ */
+export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -105,13 +109,19 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow">
-      <div className="mb-7">
-        <h1 className="text-3xl font-black tracking-tight text-gradient">Create your account</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Sign up in under a minute and start ordering.
-        </p>
-      </div>
+    <div
+      className={
+        embedded ? "w-full" : "w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow"
+      }
+    >
+      {!embedded && (
+        <div className="mb-7">
+          <h1 className="text-3xl font-black tracking-tight text-gradient">Create your account</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Sign up in under a minute and start ordering.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
         <AuthField
@@ -234,12 +244,14 @@ export function RegisterForm() {
 
         {/* GOOGLE_LOGIN_SLOT: add an "or" divider + "Continue with Google" button here later. */}
 
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link to="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
-            Sign In
-          </Link>
-        </p>
+        {!embedded && (
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
+              Sign In
+            </Link>
+          </p>
+        )}
       </form>
     </div>
   );
