@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,10 +27,6 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-/**
- * `embedded` renders the bare form (no outer card / heading), used inside the
- * tabbed login card on the homepage.
- */
 export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -43,14 +40,23 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { identifier: "", password: "", confirmPassword: "", acceptTerms: false },
+    defaultValues: {
+      identifier: "",
+      password: "",
+      confirmPassword: "",
+      acceptTerms: false,
+    },
   });
+
+  const acceptedTerms = watch("acceptTerms");
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     setError(null);
+
     try {
       console.log("STARTING_SIGNUP", { identifier: data.identifier });
+
       const result = await signUp({
         data: {
           identifier: data.identifier,
@@ -59,9 +65,12 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
         },
       });
 
-      if (!result.success) throw new Error(result.error || "Registration failed");
+      if (!result.success) {
+        throw new Error(result.error || "Registration failed");
+      }
 
       console.log("SIGNUP_SUCCESS, STARTING_SIGNIN");
+
       const loginResult = await signIn({
         data: {
           identifier: data.identifier,
@@ -69,7 +78,9 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
         },
       });
 
-      if (!loginResult.success) throw new Error(loginResult.error || "Login failed");
+      if (!loginResult.success) {
+        throw new Error(loginResult.error || "Login failed");
+      }
 
       if (loginResult.session) {
         const established = await establishClientSession({
@@ -86,7 +97,9 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
 
         try {
           const ref = new URLSearchParams(window.location.search).get("ref");
-          if (ref) await attachReferral({ data: { code: ref } });
+          if (ref) {
+            await attachReferral({ data: { code: ref } });
+          }
         } catch (refErr) {
           console.warn("Referral attach failed", refErr);
         }
@@ -98,12 +111,15 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
       }
     } catch (err: any) {
       console.error("REGISTRATION_UI_ERROR:", err);
+
       let message = "Registration failed. Please try again.";
+
       if (err.message?.includes("User already registered")) {
         message = "An account with this mobile number already exists.";
       } else if (err.message) {
         message = err.message;
       }
+
       setError(message);
     } finally {
       setIsLoading(false);
@@ -113,12 +129,16 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
   return (
     <div
       className={
-        embedded ? "w-full" : "w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow"
+        embedded
+          ? "w-full"
+          : "w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow"
       }
     >
       {!embedded && (
         <div className="mb-7">
-          <h1 className="text-3xl font-black tracking-tight text-gradient">Create your account</h1>
+          <h1 className="text-3xl font-black tracking-tight text-gradient">
+            Create your account
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Sign up in under a minute and start ordering.
           </p>
@@ -191,6 +211,7 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
               {...register("acceptTerms")}
               className="mt-1 h-4 w-4 rounded border-border accent-[var(--primary)] shrink-0"
             />
+
             <span>
               I agree to the{" "}
               <a
@@ -222,8 +243,11 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
               .
             </span>
           </label>
+
           {errors.acceptTerms && (
-            <p className="text-xs text-destructive ml-7">{errors.acceptTerms.message}</p>
+            <p className="text-xs text-destructive ml-7">
+              {errors.acceptTerms.message}
+            </p>
           )}
         </div>
 
@@ -241,12 +265,16 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
           disabled={isLoading}
           className="w-full flex justify-center py-4 px-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white gradient-primary shadow-lg shadow-primary/25 hover:shadow-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
         >
-          {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Create Account"}
+          {isLoading ? (
+            <Loader2 className="animate-spin" size={20} />
+          ) : (
+            "Create Account"
+          )}
         </button>
 
-        {watch("acceptTerms") ? (
-          <GoogleSignInButton />
-        ) : (
+        <GoogleSignInButton disabled={!acceptedTerms} />
+
+        {!acceptedTerms && (
           <p className="text-center text-xs text-muted-foreground">
             Accept the Terms &amp; Conditions and policies above to continue with Google.
           </p>
@@ -255,7 +283,10 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
         {!embedded && (
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
+            <Link
+              to="/login"
+              className="font-bold text-primary hover:text-primary/80 transition-colors"
+            >
               Sign In
             </Link>
           </p>
