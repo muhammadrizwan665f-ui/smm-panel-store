@@ -18,8 +18,8 @@ export const signUp = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
-    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
-    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
     
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error("Missing Supabase configuration");
