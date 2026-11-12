@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
 function getAuthCookieName(): string | null {
-  const supabaseUrl = process.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
+  const supabaseUrl = process.env['VITE_SUPABASE_URL'] || process.env['SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
   const projectRefMatch = supabaseUrl.match(/https:\/\/([^.]+)/);
   const projectRef = projectRefMatch ? projectRefMatch[1] : null;
   return projectRef ? `sb-${projectRef}-auth-token` : null;
@@ -28,7 +28,7 @@ export const getSession = createServerFn({ method: "GET" })
   .handler(async () => {
     const { createClient } = await import("@supabase/supabase-js");
     const SUPABASE_URL = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const SUPABASE_PUBLISHABLE_KEY = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
 
     // A plain (anon-key) client is enough to validate a user's own token —
     // it does not require the service-role key.
