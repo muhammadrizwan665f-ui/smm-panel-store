@@ -7,15 +7,21 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { signUp, signIn, completeProfile } from "@/lib/auth/auth.functions";
 import { establishClientSession } from "@/lib/auth/client-session";
 import { attachReferral } from "@/lib/referrals.functions";
+import { AuthField, AUTH_INPUT_CLASS } from "./AuthField";
 
-const registerSchema = z.object({
-  identifier: z.string().min(3, "Enter a valid mobile number or email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string().min(8, "Confirm password is required"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+const registerSchema = z
+  .object({
+    identifier: z.string().min(3, "Enter a valid mobile number or email"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(8, "Confirm password is required"),
+    acceptTerms: z.boolean().refine((v) => v === true, {
+      message: "You must accept the Terms & Conditions and Privacy Policy",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -31,6 +37,7 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    defaultValues: { identifier: "", password: "", confirmPassword: "", acceptTerms: false },
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
@@ -38,24 +45,24 @@ export function RegisterForm() {
     setError(null);
     try {
       console.log("STARTING_SIGNUP", { identifier: data.identifier });
-      const result = await signUp({ 
-        data: { 
-          identifier: data.identifier, 
+      const result = await signUp({
+        data: {
+          identifier: data.identifier,
           password: data.password,
-          confirmPassword: data.confirmPassword
-        } 
+          confirmPassword: data.confirmPassword,
+        },
       });
 
       if (!result.success) throw new Error(result.error || "Registration failed");
 
       console.log("SIGNUP_SUCCESS, STARTING_SIGNIN");
-      const loginResult = await signIn({ 
-        data: { 
-          identifier: data.identifier, 
-          password: data.password 
-        } 
+      const loginResult = await signIn({
+        data: {
+          identifier: data.identifier,
+          password: data.password,
+        },
       });
-      
+
       if (!loginResult.success) throw new Error(loginResult.error || "Login failed");
 
       if (loginResult.session) {
@@ -98,107 +105,142 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8 glass-white p-8 rounded-3xl card-shadow">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gradient">Create Account</h1>
-        <p className="mt-2 text-muted-foreground">Join our premium SMM panel</p>
+    <div className="w-full max-w-md glass-white p-7 sm:p-9 rounded-[2rem] card-shadow">
+      <div className="mb-7">
+        <h1 className="text-3xl font-black tracking-tight text-gradient">Create your account</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Sign up in under a minute and start ordering.
+        </p>
       </div>
 
-      <div className="mt-8 space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium ml-1 text-foreground/80">Mobile or Email</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-primary">
-                <Phone size={18} />
-              </div>
-              <input
-                id="identifier"
-                {...register("identifier")}
-                type="text"
-                placeholder="Mobile number or Email"
-                className="block w-full pl-12 pr-4 py-3.5 bg-secondary/30 border border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
-              />
-            </div>
-            {errors.identifier && (
-              <p className="mt-1 text-xs text-destructive ml-1">{errors.identifier.message}</p>
-            )}
-          </div>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <AuthField
+          label="Mobile or Email"
+          htmlFor="identifier"
+          icon={Phone}
+          error={errors.identifier?.message}
+        >
+          <input
+            id="identifier"
+            {...register("identifier")}
+            type="text"
+            autoComplete="username"
+            placeholder="03xx xxxxxxx or you@email.com"
+            className={AUTH_INPUT_CLASS}
+          />
+        </AuthField>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium ml-1 text-foreground/80">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-primary">
-                <Lock size={18} />
-              </div>
-              <input
-                {...register("password")}
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className="block w-full pl-12 pr-12 py-3.5 bg-secondary/30 border border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-primary transition-colors"
+        <AuthField
+          label="Password"
+          htmlFor="password"
+          icon={Lock}
+          error={errors.password?.message}
+          right={
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="text-muted-foreground hover:text-primary transition-colors"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          }
+        >
+          <input
+            id="password"
+            {...register("password")}
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
+            className={AUTH_INPUT_CLASS}
+          />
+        </AuthField>
+
+        <AuthField
+          label="Confirm Password"
+          htmlFor="confirmPassword"
+          icon={Lock}
+          error={errors.confirmPassword?.message}
+        >
+          <input
+            id="confirmPassword"
+            {...register("confirmPassword")}
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            placeholder="Repeat your password"
+            className={AUTH_INPUT_CLASS}
+          />
+        </AuthField>
+
+        <div className="space-y-1.5">
+          <label className="flex items-start gap-3 cursor-pointer text-sm text-muted-foreground leading-relaxed">
+            <input
+              type="checkbox"
+              {...register("acceptTerms")}
+              className="mt-1 h-4 w-4 rounded border-border accent-[var(--primary)] shrink-0"
+            />
+            <span>
+              I agree to the{" "}
+              <a
+                href="/terms-and-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-primary"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="mt-1 text-xs text-destructive ml-1">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium ml-1 text-foreground/80">Confirm Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-primary">
-                <Lock size={18} />
-              </div>
-              <input
-                {...register("confirmPassword")}
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                className="block w-full pl-12 pr-4 py-3.5 bg-secondary/30 border border-border/50 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-muted-foreground/40 text-foreground"
-              />
-            </div>
-            {errors.confirmPassword && (
-              <p className="mt-1 text-xs text-destructive ml-1">{errors.confirmPassword.message}</p>
-            )}
-          </div>
+                Terms &amp; Conditions
+              </a>
+              ,{" "}
+              <a
+                href="/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-primary"
+              >
+                Privacy Policy
+              </a>{" "}
+              and{" "}
+              <a
+                href="/refund-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-primary"
+              >
+                Refund Policy
+              </a>
+              .
+            </span>
+          </label>
+          {errors.acceptTerms && (
+            <p className="text-xs text-destructive ml-7">{errors.acceptTerms.message}</p>
+          )}
         </div>
 
         {error && (
-          <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium animate-in fade-in zoom-in-95 duration-200">
+          <div
+            role="alert"
+            className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium animate-in fade-in zoom-in-95 duration-200"
+          >
             {error}
           </div>
         )}
 
         <button
-          onClick={handleSubmit(onSubmit)}
+          type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl text-sm font-black uppercase tracking-widest text-white gradient-primary shadow-lg shadow-primary/25 hover:shadow-primary/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
+          className="w-full flex justify-center py-4 px-4 rounded-2xl text-sm font-black uppercase tracking-widest text-white gradient-primary shadow-lg shadow-primary/25 hover:shadow-primary/40 focus:outline-none focus:ring-4 focus:ring-primary/20 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100"
         >
-          {isLoading ? (
-            <Loader2 className="animate-spin" size={20} />
-          ) : (
-            "Create Account"
-          )}
+          {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Create Account"}
         </button>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="font-bold text-primary hover:text-primary/80 transition-colors"
-            >
-              Sign In
-            </Link>
-          </p>
-        </div>
-      </div>
+        {/* GOOGLE_LOGIN_SLOT: add an "or" divider + "Continue with Google" button here later. */}
+
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link to="/login" className="font-bold text-primary hover:text-primary/80 transition-colors">
+            Sign In
+          </Link>
+        </p>
+      </form>
     </div>
   );
 }

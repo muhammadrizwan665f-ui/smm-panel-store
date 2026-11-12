@@ -1,6 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { getSession } from "@/lib/auth/session.functions";
+import { BUSINESS } from "@/lib/business";
 
 export const Route = createFileRoute("/register")({
   beforeLoad: async () => {
@@ -9,17 +11,22 @@ export const Route = createFileRoute("/register")({
       throw redirect({ to: "/dashboard" });
     }
   },
-
+  head: () => ({
+    meta: [
+      { title: `Create Account | ${BUSINESS.name}` },
+      {
+        name: "description",
+        content: `Create your ${BUSINESS.name} account to order digital social media marketing services.`,
+      },
+    ],
+  }),
   component: RegisterPage,
 });
 
 function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px]" />
-      
+    <AuthShell>
       <RegisterForm />
-    </div>
+    </AuthShell>
   );
 }

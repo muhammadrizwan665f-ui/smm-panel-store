@@ -88,6 +88,49 @@
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
+/* Typography for long-form policy text (Privacy, Terms, Refund, ...) */
+@layer components {
+  .legal-prose p {
+    margin-top: 0.85rem;
+    line-height: 1.8;
+    color: var(--muted-foreground);
+    font-size: 0.95rem;
+  }
+  .legal-prose ul,
+  .legal-prose ol {
+    margin-top: 0.85rem;
+    padding-left: 1.25rem;
+    color: var(--muted-foreground);
+    font-size: 0.95rem;
+  }
+  .legal-prose ul {
+    list-style: disc;
+  }
+  .legal-prose ol {
+    list-style: decimal;
+  }
+  .legal-prose li {
+    margin-top: 0.45rem;
+    line-height: 1.75;
+  }
+  .legal-prose li::marker {
+    color: var(--primary);
+  }
+  .legal-prose strong {
+    color: var(--foreground);
+    font-weight: 700;
+  }
+  .legal-prose a {
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .legal-prose h3 {
+    margin-top: 1.25rem;
+    font-weight: 800;
+    color: var(--foreground);
+  }
+}
+
 @utility gradient-primary {
   background: linear-gradient(135deg, oklch(0.7 0.15 260), oklch(0.75 0.18 300));
 }
