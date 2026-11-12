@@ -265,3 +265,129 @@ iframe[src*="lovable.app"],
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* MOBILE COMPACT DESIGN — Noorix Digital Lab */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    overflow-x: hidden;
+    font-size: 13px;
+  }
+
+  /* Compact header */
+  header.sticky > div {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  header.sticky nav {
+    gap: 5px;
+  }
+
+  header.sticky nav a {
+    padding: 6px 8px;
+    font-size: 10px;
+    border-radius: 8px;
+  }
+
+  /* Hero section */
+  main section {
+    scroll-margin-top: 65px;
+  }
+
+  main section:first-child {
+    padding-top: 12px;
+  }
+
+  main section:first-child > div {
+    border-radius: 18px;
+  }
+
+  main section:first-child > div > div:first-child {
+    padding: 22px 18px;
+    gap: 14px;
+  }
+
+  main h1 {
+    font-size: 25px !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.6px;
+  }
+
+  main h2 {
+    font-size: 21px !important;
+    line-height: 1.25;
+  }
+
+  main h3 {
+    font-size: 15px !important;
+  }
+
+  main p {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  /* Buttons */
+  main a,
+  main button {
+    font-size: 12px;
+  }
+
+  /* Compact cards and sections */
+  main section:not(:first-child) {
+    padding-top: 28px;
+    margin-top: 12px;
+  }
+
+  main section > div {
+    gap: 12px;
+  }
+
+  main .rounded-3xl,
+  main .rounded-[2rem] {
+    border-radius: 16px;
+  }
+
+  main .glass-white,
+  main .card-shadow {
+    padding: 14px;
+  }
+
+  /* Reduce excessive paragraph spacing */
+  main p + p {
+    margin-top: 8px;
+  }
+
+  /* Compact about information */
+  main dl {
+    padding: 14px;
+  }
+
+  /* Compact FAQ */
+  main details {
+    padding: 12px;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 28px;
+  }
+
+  footer > div:first-child {
+    padding-top: 28px;
+    padding-bottom: 24px;
+    gap: 22px;
+  }
+
+  /* Prevent horizontal overflow */
+  main,
+  header,
+  footer {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
