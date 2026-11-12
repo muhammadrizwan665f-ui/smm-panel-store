@@ -8,6 +8,7 @@ import { signUp, signIn, completeProfile } from "@/lib/auth/auth.functions";
 import { establishClientSession } from "@/lib/auth/client-session";
 import { attachReferral } from "@/lib/referrals.functions";
 import { AuthField, AUTH_INPUT_CLASS } from "./AuthField";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 
 const registerSchema = z
   .object({
@@ -38,6 +39,7 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -242,7 +244,13 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
           {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Create Account"}
         </button>
 
-        {/* GOOGLE_LOGIN_SLOT: add an "or" divider + "Continue with Google" button here later. */}
+        {watch("acceptTerms") ? (
+          <GoogleSignInButton />
+        ) : (
+          <p className="text-center text-xs text-muted-foreground">
+            Accept the Terms &amp; Conditions and policies above to continue with Google.
+          </p>
+        )}
 
         {!embedded && (
           <p className="text-center text-sm text-muted-foreground">
