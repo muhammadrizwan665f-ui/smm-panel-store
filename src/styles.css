@@ -392,69 +392,132 @@ iframe[src*="lovable.app"],
   }
 }
 
-/* NOORIX — Animated Social Boost Rocket */
+
+/* =========================================
+   NOORIX — SOCIAL BOOST ROCKET ANIMATION
+   ========================================= */
 
 main section:first-child > div > div:first-child {
   position: relative;
+  overflow: hidden;
   isolation: isolate;
-  padding-bottom: 112px;
 }
 
+/* Social engagement trail */
 main section:first-child > div > div:first-child::before {
-  content: "";
+  content: "♥   ♥   ♡   💬   ♥   ♡   👍";
   position: absolute;
-  right: 34px;
-  bottom: 47px;
-  width: 118px;
-  height: 5px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, #7dd3fc, #fff);
-  filter: blur(5px);
-  transform: rotate(-38deg);
-  animation: noorix-rocket-trail 2.8s ease-in-out infinite;
+  right: 24px;
+  bottom: 20px;
+  z-index: 2;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  white-space: nowrap;
+  text-shadow: 0 0 12px rgba(255,255,255,.8);
   pointer-events: none;
-  z-index: -1;
+  animation: noorix-social-trail 4s cubic-bezier(.2,.7,.3,1) forwards;
 }
 
+/* Flying rocket */
 main section:first-child > div > div:first-child::after {
   content: "🚀";
   position: absolute;
-  right: 38px;
-  bottom: 42px;
-  font-size: 66px;
+  right: 25px;
+  bottom: 18px;
+  z-index: 3;
+  font-size: 64px;
   line-height: 1;
-  filter: drop-shadow(0 0 14px rgba(255,255,255,.55));
-  transform: rotate(-35deg);
-  animation: noorix-rocket-fly 2.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgba(255,255,255,.65));
   pointer-events: none;
+  animation: noorix-rocket-launch 4s cubic-bezier(.2,.7,.3,1) forwards;
 }
 
+/* Rocket flies upward */
+@keyframes noorix-rocket-launch {
+  0% {
+    transform: translate(0, 0) rotate(-38deg) scale(.75);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-65px, -180px) rotate(-38deg) scale(1);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-125px, -390px) rotate(-38deg) scale(.9);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-160px, -520px) rotate(-38deg) scale(.55);
+    opacity: 0;
+  }
+}
+
+/* Hearts, likes and comments follow the rocket */
+@keyframes noorix-social-trail {
+  0% {
+    transform: translate(0, 0) scale(.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-65px, -180px) scale(1);
+    opacity: .95;
+  }
+  100% {
+    transform: translate(-145px, -490px) scale(.7);
+    opacity: 0;
+  }
+}
+
+/* Mobile animation */
 @media (max-width: 640px) {
-  main section:first-child > div > div:first-child {
-    padding-bottom: 94px !important;
+  main section:first-child > div > div:first-child::after {
+    font-size: 48px;
+    right: 14px;
+    bottom: 12px;
   }
 
   main section:first-child > div > div:first-child::before {
-    right: 24px;
-    bottom: 39px;
-    width: 86px;
+    font-size: 14px;
+    right: 12px;
+    bottom: 14px;
+    letter-spacing: 2px;
   }
 
-  main section:first-child > div > div:first-child::after {
-    right: 24px;
-    bottom: 32px;
-    font-size: 52px;
+  @keyframes noorix-rocket-launch {
+    0% {
+      transform: translate(0, 0) rotate(-38deg) scale(.7);
+      opacity: 0;
+    }
+    12% { opacity: 1; }
+    50% {
+      transform: translate(-35px, -170px) rotate(-38deg) scale(.9);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-65px, -370px) rotate(-38deg) scale(.5);
+      opacity: 0;
+    }
   }
-}
 
-@keyframes noorix-rocket-fly {
-  0%, 100% { translate: 0 0; rotate: -3deg; }
-  50% { translate: 9px -13px; rotate: 2deg; }
-}
-
-@keyframes noorix-rocket-trail {
-  0%, 100% { opacity: .45; scale: .82; }
-  50% { opacity: 1; scale: 1.08; }
+  @keyframes noorix-social-trail {
+    0% {
+      transform: translate(0, 0) scale(.5);
+      opacity: 0;
+    }
+    15% { opacity: 1; }
+    100% {
+      transform: translate(-70px, -350px) scale(.7);
+      opacity: 0;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -463,3 +526,4 @@ main section:first-child > div > div:first-child::after {
     animation: none !important;
   }
 }
+
