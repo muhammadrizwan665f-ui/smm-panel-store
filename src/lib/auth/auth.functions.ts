@@ -1,3 +1,4 @@
+
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -123,8 +124,8 @@ export const signIn = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
-    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
-    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
     
     if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error("Missing Supabase configuration");
@@ -177,8 +178,8 @@ export const requestMobilePasswordResetOtp = createServerFn({ method: "POST" })
   .inputValidator((d: any) => z.object({ mobile: z.string().min(3) }).parse(d?.data ?? d))
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
-    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
-    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
     const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
     const isEmail = data.mobile.includes('@');
@@ -195,8 +196,8 @@ export const resetMobilePasswordWithOtp = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { createClient } = await import("@supabase/supabase-js");
-    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://owlbeyryintvqaykodxs.supabase.co';
-    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_t8tESVD5AZkds6n6Pd1Oqg_5CuktjKc';
+    const supabaseUrl = process.env['SUPABASE_URL'] || process.env['VITE_SUPABASE_URL'] || 'https://mhyphzgzfijhjvptferr.supabase.co';
+    const supabaseAnonKey = process.env['SUPABASE_PUBLISHABLE_KEY'] || process.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || 'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
     const supabase = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
 
     const isEmail = data.mobile.includes('@');
