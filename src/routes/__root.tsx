@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BUSINESS } from "@/lib/business";
 import {
   Outlet,
   Link,
@@ -91,8 +92,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     }
   },
   head: ({ loaderData }) => {
-    const brand = loaderData?.brand_name || "SMM Panel";
-    const description = `${brand} — order social media marketing services, top up your wallet and track every order in one dashboard.`;
+  const brand = loaderData?.brand_name || BUSINESS.name;
+const description = `${brand} provides social media marketing services for Instagram, Facebook, YouTube and Telegram. Based in Lahore, Pakistan.`;
     return {
       meta: [
         { charSet: "utf-8" },
