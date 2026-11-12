@@ -5,11 +5,7 @@ import type { Database } from './types';
 const SUPABASE_URL = 'https://mhyphzgzfijhjvptferr.supabase.co';
 
 const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-if (!SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error('Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable');
-}
+  'sb_publishable_ygB7P-HWTgI98Bs1xNUbYg_iiIx_hCb';
 
 export const supabase = createClient<Database>(
   SUPABASE_URL,
