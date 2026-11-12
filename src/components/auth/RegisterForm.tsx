@@ -272,8 +272,7 @@ export function RegisterForm({ embedded = false }: { embedded?: boolean }) {
           )}
         </button>
 
-        <GoogleSignInButton disabled={!acceptedTerms} />
-
+<GoogleSignInButton />
         {!acceptedTerms && (
           <p className="text-center text-xs text-muted-foreground">
             Accept the Terms &amp; Conditions and policies above to continue with Google.
