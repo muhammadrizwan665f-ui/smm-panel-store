@@ -6,6 +6,7 @@ import { Phone, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Link, useNavigate, useLocation, useSearch, useRouter } from "@tanstack/react-router";
 import { signIn, completeProfile } from "@/lib/auth/auth.functions";
 import { establishClientSession } from "@/lib/auth/client-session";
+import { BUSINESS } from "@/lib/business";
 import { AuthField, AUTH_INPUT_CLASS } from "./AuthField";
 
 const loginSchema = z.object({
@@ -109,7 +110,7 @@ export const LoginForm = ({ embedded = false }: { embedded?: boolean }) => {
     >
       {!embedded && (
       <div className="mb-7">
-        {logoUrl && (
+        {isManagement && logoUrl && (
           <div className="mb-5">
             <img src={logoUrl} alt={brandName} className="h-14 w-auto object-contain" />
           </div>
@@ -118,7 +119,7 @@ export const LoginForm = ({ embedded = false }: { embedded?: boolean }) => {
           {isManagement ? brandName : "Welcome back"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {isManagement ? "Sign in to the admin panel" : `Sign in to your ${brandName} account`}
+          {isManagement ? "Sign in to the admin panel" : `Sign in to your ${BUSINESS.name} account`}
         </p>
       </div>
       )}
