@@ -26,7 +26,6 @@ import {
   BookOpen
 } from "lucide-react";
 import React from "react";
-import { signOut } from "@/lib/auth/auth.functions";
 import { clearClientSession } from "@/lib/auth/client-session";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/lib/auth/session.functions";
@@ -108,7 +107,7 @@ function AuthenticatedLayout() {
     }
   }, [session, sessionLoading, currentPath, navigate]);
 
-  const handleLogout = async () => {
+  const const const handleLogout = async () => {   await clearClientSession();   window.location.replace("/login"); }; = async () => {   await clearClientSession();   window.location.replace("/login"); }; = async () => {
     await signOut();
     await clearClientSession();
     window.location.href = "/login";
@@ -194,7 +193,7 @@ function AuthenticatedLayout() {
               
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">Your User ID</span>
-                <div className="text-xl font-black tracking-tight">{session?.user?.mobile_number || "Guest"}</div>
+                <div className="text-xl font-black tracking-tight">{session?.user?.mobile_number || session?.user?.email || "Account"}</div>
               </div>
 
               <button 
@@ -247,7 +246,7 @@ function AuthenticatedLayout() {
 
             <div className="pt-4 pb-10">
               <button 
-                onClick={handleLogout}
+                onClick={const const handleLogout = async () => {   await clearClientSession();   window.location.replace("/login"); }; = async () => {   await clearClientSession();   window.location.replace("/login"); };}
                 className="w-full py-4 text-xs font-black uppercase tracking-widest text-destructive"
               >
                 Logout Account
