@@ -645,6 +645,113 @@ function ProviderServices() {
         </div>
       </div>
 
+      {/* Live Import Progress */}
+      {importProgress && (
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+                Import Progress
+              </h3>
+              <p className="text-xs text-gray-400 mt-1">
+                Live provider service import statistics
+              </p>
+            </div>
+
+            <span
+              className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl ${
+                importProgress.status === "completed"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : importProgress.status === "failed"
+                    ? "bg-red-50 text-red-600"
+                    : "bg-blue-50 text-blue-600"
+              }`}
+            >
+              {importProgress.status === "running"
+                ? "Importing..."
+                : importProgress.status}
+            </span>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold text-gray-600">
+                {importProgress.processed} / {importProgress.total} Services
+              </span>
+              <span className="text-sm font-black text-blue-600">
+                {importProgress.percent}%
+              </span>
+            </div>
+
+            <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                style={{ width: `${importProgress.percent}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Total Services",
+                value: importProgress.total,
+              },
+              {
+                label: "Imported",
+                value: importProgress.imported,
+              },
+              {
+                label: "Updated",
+                value: importProgress.updated,
+              },
+              {
+                label: "Unmatched",
+                value: importProgress.unmatched,
+              },
+              {
+                label: "Failed",
+                value: importProgress.failed,
+              },
+              {
+                label: "Matched Categories",
+                value: `${importProgress.matchedCategories} / ${importProgress.totalCategories}`,
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="bg-gray-50 border border-gray-100 rounded-2xl p-4"
+              >
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                  {item.label}
+                </p>
+                <p className="text-xl font-black text-gray-900 mt-2">
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {importProgress.errors?.length > 0 && (
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+              <p className="text-xs font-black text-red-700 mb-2">
+                Import Errors ({importProgress.errors.length})
+              </p>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {importProgress.errors.map((error: string, index: number) => (
+                  <p
+                    key={index}
+                    className="text-xs text-red-600 break-words"
+                  >
+                    {error}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Provider Services Table */}
       <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
