@@ -228,6 +228,36 @@ function ProviderServices() {
     }
   };
 
+  const handleSaveDefaultMarkup = async () => {
+    setSavingMarkup(true);
+
+    try {
+      const result = await saveDefaultServiceMarkup({
+        data: {
+          markupType: defaultMarkup.markupType,
+          markupAmount: Number(defaultMarkup.markupAmount),
+        },
+      });
+
+      const parsed =
+        typeof result === "string" ? JSON.parse(result) : result;
+
+      if (parsed.success) {
+        setImportConfig((prev) => ({
+          ...prev,
+          markupType: defaultMarkup.markupType,
+          markupAmount: Number(defaultMarkup.markupAmount),
+        }));
+
+        toast.success("Default profit settings saved successfully.");
+      }
+    } catch (error: any) {
+      toast.error("Failed to save markup: " + error.message);
+    } finally {
+      setSavingMarkup(false);
+    }
+  };
+
   // Existing manual import
   const executeImport = async () => {
     setImportLoading(true);
@@ -451,6 +481,70 @@ function ProviderServices() {
               Import ({selectedServices.length})
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Global Default Profit Settings */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+          <div>
+            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
+              Global Default Profit
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">
+              Default markup automatically applies to newly imported services.
+              Existing custom service markup remains unchanged.
+            </p>
+          </div>
+
+          <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-4 py-2 rounded-xl">
+            Default Pricing
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={defaultMarkup.markupType}
+            onChange={(event) =>
+              setDefaultMarkup((prev) => ({
+                ...prev,
+                markupType: event.target.value as "fixed" | "percentage",
+              }))
+            }
+            className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 text-sm font-bold"
+          >
+            <option value="percentage">Percentage (%)</option>
+            <option value="fixed">Fixed Amount</option>
+          </select>
+
+          <div className="relative flex-1">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={defaultMarkup.markupAmount}
+              onChange={(event) =>
+                setDefaultMarkup((prev) => ({
+                  ...prev,
+                  markupAmount: Number(event.target.value),
+                }))
+              }
+              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 pr-12 text-sm font-black"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">
+              {defaultMarkup.markupType === "percentage"
+                ? "%"
+                : currencySettings?.customer_currency || "PKR"}
+            </span>
+          </div>
+
+          <button
+            onClick={handleSaveDefaultMarkup}
+            disabled={savingMarkup}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-2xl text-xs font-black uppercase tracking-widest disabled:opacity-50"
+          >
+            {savingMarkup ? "Saving..." : "Save Default Profit"}
+          </button>
         </div>
       </div>
 
