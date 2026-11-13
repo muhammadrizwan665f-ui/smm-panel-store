@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
  * This is the ONLY code in the app allowed to touch the Supabase auth
  * cookie/localStorage. Everywhere else must go through:
  *   - establishClientSession() after signIn/signUp
- *   - clearClientSession() on logout
+ *   - export async function clearClientSession(): Promise<void> {   if (typeof window === 'undefined') return;    try {     const { error } = await supabase.auth.signOut({ scope: "local" });     if (error) {       console.error("[clearClientSession] signOut error:", error.message);     }   } catch (e) {     console.error("[clearClientSession] signOut error:", e);   } finally {     clearSessionCookie();   } } on logout
  *   - initSessionCookieSync() once, at app startup
  */
 
