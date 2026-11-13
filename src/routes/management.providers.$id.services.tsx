@@ -294,39 +294,136 @@ function ProviderServices() {
     }
   };
 
-  // Import all services and automatically categorize them
+  // Import all services in batches with live progress
   const handleAutoImport = async () => {
     if (!services.length) {
       toast.error("No provider services available. Fetch services first.");
       return;
     }
 
+    const batchSize = 50;
+    const total = services.length;
+
+    let imported = 0;
+    let updated = 0;
+    let unmatched = 0;
+    let failed = 0;
+    let processed = 0;
+    let totalCategories = 0;
+
+    const matchedCategoryIds = new Set<string>();
+    const errors: string[] = [];
+
     setImportLoading(true);
+    setImportProgress({
+      total,
+      processed: 0,
+      percent: 0,
+      imported: 0,
+      updated: 0,
+      unmatched: 0,
+      failed: 0,
+      matchedCategories: 0,
+      totalCategories: 0,
+      status: "running",
+      errors: [],
+    });
 
     try {
-      const result = await importServices({
-        data: {
-          providerId: id,
-          markupType: importConfig.markupType,
-          markupAmount: importConfig.markupAmount,
-          autoCategorize: true,
-        },
+      for (let i = 0; i < total; i += batchSize) {
+        const batch = services.slice(i, i + batchSize);
+
+        try {
+          const result = await importServices({
+            data: {
+              providerId: id,
+              serviceIds: batch.map((service) =>
+                String(service.provider_service_id)
+              ),
+              markupType: defaultMarkup.markupType,
+              markupAmount: Number(defaultMarkup.markupAmount),
+              autoCategorize: true,
+            },
+          });
+
+          const parsed =
+            typeof result === "string" ? JSON.parse(result) : result;
+
+          imported += Number(parsed.importedCount || 0);
+          updated += Number(parsed.updatedCount || 0);
+          unmatched += Number(parsed.unmatchedCount || 0);
+          totalCategories = Number(
+            parsed.totalCategories || totalCategories
+          );
+
+          (parsed.matchedCategoryIds || []).forEach((categoryId: string) => {
+            matchedCategoryIds.add(categoryId);
+          });
+
+          if (parsed.errors?.length) {
+            errors.push(...parsed.errors.map((e: any) =>
+              typeof e === "string" ? e : JSON.stringify(e)
+            ));
+          }
+        } catch (batchError: any) {
+          failed += batch.length;
+          errors.push(
+            `Batch ${Math.floor(i / batchSize) + 1}: ${batchError.message || "Import failed"}`
+          );
+        }
+
+        processed += batch.length;
+
+        setImportProgress({
+          total,
+          processed,
+          percent: Math.round((processed / total) * 100),
+          imported,
+          updated,
+          unmatched,
+          failed,
+          matchedCategories: matchedCategoryIds.size,
+          totalCategories,
+          status: "running",
+          errors: [...errors],
+        });
+      }
+
+      const finalStatus = failed > 0 ? "failed" : "completed";
+
+      setImportProgress({
+        total,
+        processed,
+        percent: 100,
+        imported,
+        updated,
+        unmatched,
+        failed,
+        matchedCategories: matchedCategoryIds.size,
+        totalCategories,
+        status: finalStatus,
+        errors,
       });
 
-      const parsed =
-        typeof result === "string" ? JSON.parse(result) : result;
-
-      if (parsed.success) {
-        toast.success(
-          `Imported: ${parsed.importedCount} | Updated: ${parsed.updatedCount} | Unmatched: ${parsed.unmatchedCount}`
+      if (failed > 0) {
+        toast.warning(
+          `Import finished with errors. Imported: ${imported} | Updated: ${updated} | Failed: ${failed}`
         );
-
-        setSelectedServices([]);
-        await fetchData();
       } else {
-        toast.error(parsed.message || "Auto import failed.");
+        toast.success(
+          `Import completed! Imported: ${imported} | Updated: ${updated} | Unmatched: ${unmatched}`
+        );
       }
+
+      setSelectedServices([]);
+      await fetchData();
     } catch (error: any) {
+      setImportProgress((prev: any) => ({
+        ...prev,
+        status: "failed",
+        errors: [...(prev?.errors || []), error.message || "Import failed"],
+      }));
+
       toast.error("Auto import error: " + error.message);
     } finally {
       setImportLoading(false);
