@@ -89,7 +89,11 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       authHeader?.startsWith("Bearer ")
         ? authHeader.substring(7)
         : readAccessToken(cookieHeader, SUPABASE_URL);
-
+console.log("[AUTH DEBUG]", {
+  hasAuthorizationHeader: !!authHeader,
+  hasCookieHeader: !!cookieHeader,
+  hasToken: !!token,
+});
     const createPublicClient = () =>
       createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
         global: {
