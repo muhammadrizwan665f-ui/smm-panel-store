@@ -1,4 +1,3 @@
-
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import {
   Plus,
@@ -15,6 +14,8 @@ import { toast } from "sonner";
 import {
   importServices,
   syncServiceLimits,
+  getDefaultServiceMarkup,
+  saveDefaultServiceMarkup,
 } from "@/lib/providers/import.functions";
 import { getProviderServices } from "@/lib/providers/provider.functions";
 import { getCurrencySettings } from "@/lib/settings.functions";
@@ -36,6 +37,13 @@ function ProviderServices() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedServices, setSelectedServices] = React.useState<string[]>([]);
   const [currencySettings, setCurrencySettings] = React.useState<any>(null);
+
+  const [defaultMarkup, setDefaultMarkup] = React.useState({
+    markupType: "percentage" as "fixed" | "percentage",
+    markupAmount: 20,
+  });
+  const [savingMarkup, setSavingMarkup] = React.useState(false);
+  const [importProgress, setImportProgress] = React.useState<any>(null);
 
   // Import Modal State
   const [showImportModal, setShowImportModal] = React.useState(false);
@@ -96,6 +104,27 @@ function ProviderServices() {
       } catch (error) {
         console.error("[UI] Currency settings error:", error);
         setCurrencySettings(null);
+      }
+
+      try {
+        const markupRes = await getDefaultServiceMarkup();
+        const markupParsed =
+          typeof markupRes === "string"
+            ? JSON.parse(markupRes)
+            : markupRes;
+
+        setDefaultMarkup({
+          markupType: markupParsed.markupType,
+          markupAmount: markupParsed.markupAmount,
+        });
+
+        setImportConfig((prev) => ({
+          ...prev,
+          markupType: markupParsed.markupType,
+          markupAmount: markupParsed.markupAmount,
+        }));
+      } catch (error) {
+        console.error("Default markup settings error:", error);
       }
     } catch (error: any) {
       console.error("[UI] Fetch data error:", error);
