@@ -307,7 +307,6 @@ export const importServices = createServerFn({ method: "POST" })
     const matchedCategoryIds = new Set<string>();
     const errors: string[] = [];
 
-    // Resolve category mappings and validate provider rates first.
     const eligibleServices: Array<{
       service: any;
       categoryId: string;
@@ -363,7 +362,6 @@ export const importServices = createServerFn({ method: "POST" })
       });
     }
 
-    // Fetch existing records in one query instead of one query per service.
     const providerServiceIds = eligibleServices.map(
       (item) => item.providerServiceId,
     );
@@ -371,7 +369,7 @@ export const importServices = createServerFn({ method: "POST" })
     const { data: existingRows, error: existingError } = await supabaseAdmin
       .from("services")
       .select(
-        "id, provider_service_id, markup_type, markup_amount, profit_type, profit_value",
+        "id, provider_service_id, category_id, status, markup_type, markup_amount, profit_type, profit_value",
       )
       .eq("provider_id", providerId)
       .in("provider_service_id", providerServiceIds);
@@ -451,7 +449,9 @@ export const importServices = createServerFn({ method: "POST" })
       };
 
       if (existing) {
-        // Do not include category_id or status in existing service updates.
+        // Preserve the existing category and status during re-import.
+        payload.category_id = existing.category_id;
+        payload.status = existing.status;
         updatePayloads.push(payload);
       } else {
         payload.category_id = item.categoryId;
@@ -460,8 +460,6 @@ export const importServices = createServerFn({ method: "POST" })
       }
     }
 
-    // Bulk upsert new services separately so existing category/status
-    // fields are never overwritten by missing values.
     if (newPayloads.length > 0) {
       const { error: insertError } = await supabaseAdmin
         .from("services")
@@ -558,26 +556,42 @@ export const syncServiceLimits = createServerFn({ method: "POST" })
     let updatedCount = 0;
     const errors: string[] = [];
 
-    // Keep this operation limited to manageable batches.
-    for (let i = 0; i < services.length; i += 50) {
-      const batch = services.slice(i, i + 50);
+    const syncedAt = new Date().toISOString();
+    const updates: Record<string, any>[] = [];
 
-      for (const service of batch) {
-        const match = byPsid.get(String(service.provider_service_id));
-        if (!match) continue;
+    for (const service of services) {
+      const match = byPsid.get(String(service.provider_service_id));
+      if (!match) continue;
 
-        const { error } = await supabaseAdmin
-          .from("services")
-          .update({
-            min_quantity: getQuantity(match.provider_min, 1),
-            max_quantity: getQuantity(match.provider_max, 9999999),
-            provider_type: match.type || null,
-            provider_rate: match.provider_cost,
-            last_synced_at: new Date().toISOString(),
-          })
-          .eq("id", service.id);
+      updates.push({
+        id: service.id,
+        min_quantity: getQuantity(match.provider_min, 1),
+        max_quantity: getQuantity(match.provider_max, 9999999),
+        provider_type: match.type || null,
+        provider_rate: match.provider_cost,
+        last_synced_at: syncedAt,
+      });
+    }
 
-        if (error) errors.push(`${service.id}: ${error.message}`);
+    // Update in manageable batches.
+    for (let i = 0; i < updates.length; i += 50) {
+      const batch = updates.slice(i, i + 50);
+
+      const results = await Promise.all(
+        batch.map(async (item) => {
+          const { id, ...values } = item;
+
+          const { error } = await supabaseAdmin
+            .from("services")
+            .update(values)
+            .eq("id", id);
+
+          return error ? `${id}: ${error.message}` : null;
+        }),
+      );
+
+      for (const result of results) {
+        if (result) errors.push(result);
         else updatedCount++;
       }
     }
