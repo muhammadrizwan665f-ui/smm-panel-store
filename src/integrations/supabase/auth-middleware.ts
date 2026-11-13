@@ -130,7 +130,11 @@ console.log("[AUTH DEBUG]", {
       data: { user },
       error,
     } = await supabase.auth.getUser(token);
-
+console.log("[AUTH RESULT]", {
+  userFound: !!user,
+  userId: user?.id ?? null,
+  error: error?.message ?? null,
+});
     if (error || !user) {
       console.warn(
         "[AuthMiddleware] Invalid or expired session:",
