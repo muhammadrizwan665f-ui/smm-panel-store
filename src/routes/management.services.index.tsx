@@ -24,7 +24,12 @@ import * as LucideIcons from "lucide-react";
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { getInternalServices, updateServiceStatus, deleteService } from "@/lib/providers/management.functions";
+import {
+  getInternalServices,
+  updateServiceStatus,
+  deleteService,
+  updateServiceMarkup,
+} from "@/lib/providers/management.functions";
 import { adminSaveService, adminBulkUpdateServiceIconsByKeyword } from "@/lib/admin/admin.functions";
 import { getCurrencySettings } from "@/lib/settings.functions";
 import { recalculateServicePrices } from "@/lib/providers/provider.functions";
@@ -179,8 +184,6 @@ function ServicesPage() {
     }
   };
 
-
-
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this service?")) return;
     try {
@@ -211,6 +214,45 @@ function ServicesPage() {
     }
   };
 
+  const handleSaveServiceMarkup = async (
+    service: any,
+    markupType: "percentage" | "fixed",
+    markupAmount: number
+  ) => {
+    if (!Number.isFinite(markupAmount) || markupAmount < 0) {
+      toast.error("Enter a valid profit amount.");
+      return;
+    }
+
+    try {
+      await updateServiceMarkup({
+        data: {
+          id: service.id,
+          markupType,
+          markupAmount,
+        },
+      });
+
+      const recalcResult = await recalculateServicePrices({
+        data: { serviceIds: [service.id] },
+      });
+
+      const parsed =
+        typeof recalcResult === "string"
+          ? JSON.parse(recalcResult)
+          : recalcResult;
+
+      if (!parsed.success) {
+        throw new Error(parsed.message || "Price recalculation failed.");
+      }
+
+      toast.success("Service profit and customer price updated.");
+      await fetchData();
+    } catch (error: any) {
+      toast.error("Profit update failed: " + error.message);
+    }
+  };
+
   const currencySymbols: Record<string, string> = {
     'PKR': 'Rs.',
     'USD': '$',
@@ -219,7 +261,6 @@ function ServicesPage() {
   const currentSymbol = currencySymbols[currencySettings?.customer_currency] || 'Rs.';
 
   const filteredServices = services.filter(s => 
-
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.category?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.provider?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -289,8 +330,6 @@ function ServicesPage() {
         </div>
       </div>
 
-      {/* Bulk-by-keyword: set one icon for every service whose name matches a
-          word, e.g. every "Likes" service across ALL platforms at once. */}
       <div className="bg-amber-50/50 p-4 rounded-3xl border border-amber-100 flex flex-col md:flex-row gap-3 md:items-center">
         <div className="flex items-center gap-2 shrink-0">
           <Search size={14} className="text-amber-600" />
