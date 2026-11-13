@@ -471,3 +471,69 @@ export const syncServiceLimits = createServerFn({ method: "POST" })
       errors: errors.length ? errors.slice(0, 5) : undefined,
     });
   });
+
+export const getDefaultServiceMarkup = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+
+    const { data, error } = await supabaseAdmin
+      .from("site_settings")
+      .select("key, value")
+      .in("key", [
+        "default_service_markup_type",
+        "default_service_markup_amount",
+      ]);
+
+    if (error) throw new Error(error.message);
+
+    const settings: Record<string, string> = {};
+    (data || []).forEach((item: any) => {
+      settings[item.key] = item.value || "";
+    });
+
+    return JSON.stringify({
+      markupType: settings.default_service_markup_type || "percentage",
+      markupAmount: Number(
+        settings.default_service_markup_amount || 20
+      ),
+    });
+  });
+
+export const saveDefaultServiceMarkup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => d as {
+    markupType: "percentage" | "fixed";
+    markupAmount: number;
+  })
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+
+    if (
+      !["percentage", "fixed"].includes(data.markupType) ||
+      !Number.isFinite(Number(data.markupAmount)) ||
+      Number(data.markupAmount) < 0
+    ) {
+      throw new Error("Invalid markup settings.");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("site_settings")
+      .upsert(
+        [
+          {
+            key: "default_service_markup_type",
+            value: data.markupType,
+          },
+          {
+            key: "default_service_markup_amount",
+            value: String(data.markupAmount),
+          },
+        ],
+        { onConflict: "key" }
+      );
+
+    if (error) throw new Error(error.message);
+
+    return JSON.stringify({ success: true });
+  });
