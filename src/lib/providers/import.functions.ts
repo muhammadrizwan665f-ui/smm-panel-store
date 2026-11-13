@@ -1,4 +1,3 @@
-
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
@@ -24,12 +23,6 @@ const normalize = (value: unknown) =>
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-
-const hasTerm = (value: string, terms: string[]) =>
-  terms.some((term) => {
-    const normalizedTerm = normalize(term);
-    return (` ${value} `).includes(` ${normalizedTerm} `);
-  });
 
 function detectPlatform(text: string): string | null {
   const rules: Array<[string, RegExp]> = [
@@ -274,6 +267,7 @@ export const importServices = createServerFn({ method: "POST" })
     let importedCount = 0;
     let updatedCount = 0;
     let unmatchedCount = 0;
+    const matchedCategoryIds = new Set<string>();
     const errors: string[] = [];
 
     for (const ps of providerServices) {
@@ -286,6 +280,8 @@ export const importServices = createServerFn({ method: "POST" })
           unmatchedCount++;
           continue;
         }
+
+        matchedCategoryIds.add(mappedCategoryId);
 
         const providerRate = Number(ps.provider_cost);
         if (!Number.isFinite(providerRate)) {
@@ -302,10 +298,34 @@ export const importServices = createServerFn({ method: "POST" })
 
         const internalCost = usdtCost * usdtExchangeRate;
 
+        const providerServiceId = String(ps.provider_service_id);
+
+        const { data: existingService, error: existingError } =
+          await supabaseAdmin
+            .from("services")
+            .select("id, markup_type, markup_amount, profit_type, profit_value")
+            .eq("provider_id", providerId)
+            .eq("provider_service_id", providerServiceId)
+            .maybeSingle();
+
+        if (existingError) throw new Error(existingError.message);
+
+        const effectiveMarkupType = (
+          existingService?.markup_type ||
+          existingService?.profit_type ||
+          markupType
+        ) as "fixed" | "percentage";
+
+        const effectiveMarkupAmount = Number(
+          existingService?.markup_amount ??
+          existingService?.profit_value ??
+          markupAmount
+        );
+
         let customerPrice =
-          markupType === "percentage"
-            ? internalCost * (1 + markupAmount / 100)
-            : internalCost + markupAmount;
+          effectiveMarkupType === "percentage"
+            ? internalCost * (1 + effectiveMarkupAmount / 100)
+            : internalCost + effectiveMarkupAmount;
 
         if (roundingMethod === "whole") {
           customerPrice = Math.round(customerPrice);
@@ -316,18 +336,6 @@ export const importServices = createServerFn({ method: "POST" })
         } else if (roundingMethod !== "none") {
           customerPrice = Math.round(customerPrice * 100) / 100;
         }
-
-        const providerServiceId = String(ps.provider_service_id);
-
-        const { data: existingService, error: existingError } =
-          await supabaseAdmin
-            .from("services")
-            .select("id")
-            .eq("provider_id", providerId)
-            .eq("provider_service_id", providerServiceId)
-            .maybeSingle();
-
-        if (existingError) throw new Error(existingError.message);
 
         const servicePayload: Record<string, any> = {
           name: ps.name || `Service ${providerServiceId}`,
@@ -345,14 +353,14 @@ export const importServices = createServerFn({ method: "POST" })
           normalized_usdt_cost: usdtCost,
           customer_currency: customerCurrency,
           converted_cost: internalCost,
-          profit_type: markupType,
-          profit_value: markupAmount,
+          markup_type: effectiveMarkupType,
+          markup_amount: effectiveMarkupAmount,
+          profit_type: effectiveMarkupType,
+          profit_value: effectiveMarkupAmount,
           customer_price: customerPrice,
           last_synced_at: new Date().toISOString(),
         };
 
-        // Existing services keep their current category and status.
-        // New services get the matched category and are activated.
         if (!existingService) {
           servicePayload.category_id = mappedCategoryId;
           servicePayload.status = "active";
@@ -383,6 +391,10 @@ export const importServices = createServerFn({ method: "POST" })
       updatedCount,
       unmatchedCount,
       totalProcessed: providerServices.length,
+      matchedCategoryIds: [...matchedCategoryIds],
+      totalCategories: categories.filter(
+        (category: any) => category.parent_category_id
+      ).length,
       currency: customerCurrency,
       usdtExchangeRate,
       message: autoCategorize
