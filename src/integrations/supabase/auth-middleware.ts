@@ -85,10 +85,36 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     const cookieHeader = request?.headers?.get("cookie");
 
     // First try Authorization header, then the website's Supabase session cookie.
-    const token =
-      authHeader?.startsWith("Bearer ")
-        ? authHeader.substring(7)
-        : readAccessToken(cookieHeader, SUPABASE_URL);
+  const headerToken = authHeader?.startsWith("Bearer ")
+  ? authHeader.substring(7)
+  : null;
+
+const cookieToken = readAccessToken(cookieHeader, SUPABASE_URL);
+
+function getTokenInfo(token: string | null) {
+  if (!token) return null;
+
+  try {
+    const header = JSON.parse(
+      atob(token.split(".")[0].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
+    return { kid: header.kid, issuer: payload.iss };
+  } catch {
+    return { invalid: true };
+  }
+}
+
+console.log("[TOKEN DEBUG]", {
+  authorization: getTokenInfo(headerToken),
+  cookie: getTokenInfo(cookieToken),
+});
+
+const token = headerToken || cookieToken;
 console.log("[AUTH DEBUG]", {
   hasAuthorizationHeader: !!authHeader,
   hasCookieHeader: !!cookieHeader,
