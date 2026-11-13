@@ -49,3 +49,37 @@ export const deleteService = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return JSON.stringify({ success: true });
   });
+
+export const updateServiceMarkup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: any) => d as {
+    id: string;
+    markupType: "percentage" | "fixed";
+    markupAmount: number;
+  })
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = (context as any)?.supabase;
+
+    if (
+      !data.id ||
+      !["percentage", "fixed"].includes(data.markupType) ||
+      !Number.isFinite(Number(data.markupAmount)) ||
+      Number(data.markupAmount) < 0
+    ) {
+      throw new Error("Invalid service profit settings.");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("services")
+      .update({
+        markup_type: data.markupType,
+        markup_amount: Number(data.markupAmount),
+        profit_type: data.markupType,
+        profit_value: Number(data.markupAmount),
+      })
+      .eq("id", data.id);
+
+    if (error) throw new Error(error.message);
+
+    return JSON.stringify({ success: true });
+  });
